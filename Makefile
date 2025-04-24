@@ -20,7 +20,7 @@ PYTHON := $(VENV)/bin/python3
 PIP := $(VENV)/bin/pip
 
 # Docker image name
-IMAGE_NAME := catalog
+IMAGE_NAME := catalog-controller
 PORT := $(or $(PORT),8000)
 
 .PHONY: help virtualenv clean install activate run docker-build lint ci setup pre-commit
