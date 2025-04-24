@@ -1,0 +1,45 @@
+replicaCount: 1
+
+image:
+  repository: catalog-controller
+  pullPolicy: Always
+  tag: latest
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+rbac:
+  create: true
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+compass:
+  apiBaseUrl: "https://api.atlassian.com/compass"
+  credentials:
+    existingSecret: ""
+    create: true
+    cloudId: ""  # Will be base64 encoded by the template
+    apiToken: ""  # Will be base64 encoded by the template

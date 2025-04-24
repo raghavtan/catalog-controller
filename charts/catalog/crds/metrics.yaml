@@ -1,0 +1,219 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: metrics.catalog.onefootball.com
+spec:
+  group: catalog.onefootball.com
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: Represents a metric definition used for evaluating components against specific criteria using a series of facts (steps).
+          required:
+            - apiVersion
+            - kind
+            - metadata
+            - spec
+          properties:
+            apiVersion:
+              type: string
+              description: 'APIVersion defines the versioned schema of this representation of an object. Must be "of-catalog/v1alpha1".'
+            kind:
+              type: string
+              description: 'Kind is a string value representing the REST resource this object represents. Must be "Metric".'
+            metadata:
+              type: object
+              description: Standard Kubernetes object metadata. Contains name, labels, etc.
+              required:
+                - name
+                - componentType
+              properties:
+                name:
+                  type: string
+                  description: "Unique identifier name for the Metric resource within a namespace."
+                labels:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: "Labels for classification, filtering, and grouping metrics. Examples include 'grading-system'."
+                  properties:
+                    grading-system:
+                      type: string
+                      description: "Specifies the grading system the metric belongs to (e.g., observability, cost-optimization, security)."
+                componentType:
+                  type: array
+                  description: "List of component types (e.g., service, cloud-resource) that this metric applies to."
+                  minItems: 1
+                  items:
+                    type: string
+                    enum: ["service", "cloud-resource"]
+            facts:
+              type: array # Facts are defined as an ordered list of steps/checks
+              description: "A list of facts (steps) used for evaluation. Executed sequentially, supporting dependencies."
+              items:
+                type: object
+                description: "A single fact or step in the metric evaluation process."
+                required:
+                  - id
+                  - name
+                  - type
+                properties:
+                  id:
+                    type: string
+                    description: "Unique identifier for this fact within the metric. Used as a reference in 'dependsOn'."
+                  name:
+                    type: string
+                    description: "Human-readable name or description of the fact's purpose."
+                  type:
+                    type: string
+                    description: "The operational type of the fact: extract data, aggregate results, or validate data."
+                    enum: ["extract", "aggregate", "validate"]
+                  source:
+                    type: string
+                    description: "The source system for the fact data (required for 'extract' type, optional otherwise)."
+                    enum: ["github", "jsonapi", "prometheus"]
+                  rule:
+                    type: string
+                    description: "The rule engine or specific check to apply (often used with 'extract' or 'validate' types)."
+                    enum: ["jsonpath", "regex_match", "notempty", "search", "deps_match", "fileExists", "fileRegex"]
+                  dependsOn:
+                    type: array
+                    description: "List of fact 'id's that this fact depends on. Ensures prerequisite facts are processed first (used by 'aggregate' and 'validate' types)."
+                    items:
+                      type: string
+                  method:
+                    type: string
+                    description: "Aggregation method to apply to results of dependent facts (used by 'aggregate' type)."
+                    enum: ["and", "or", "count"]
+                  pattern:
+                    type: string
+                    description: "Regular expression pattern (used primarily by 'validate' type with 'regex_match' rule)."
+                  uri:
+                    type: string
+                    description: "URI for 'jsonapi' source. Can contain placeholders like :param or ${Metadata.Name} resolved by the controller."
+                  auth:
+                    type: object
+                    description: "Authentication details, typically for 'jsonapi' source."
+                    properties:
+                      header:
+                        type: string
+                        description: "The HTTP header name to use for authentication (e.g., X-Honeycomb-Team, Authorization)."
+                      tokenVar:
+                        type: string
+                        description: "The name of the environment variable (available to the controller) holding the authentication token/secret."
+                    required: ["header", "tokenVar"]
+                  repo:
+                    type: string
+                    description: "Repository name (often without owner) for 'github' source. Supports ${Metadata.Name} placeholder."
+                  filePath:
+                    type: string
+                    description: "Path to the file within the repository for 'github' source checks (e.g., fileExists, jsonpath on file)."
+                  jsonPath:
+                    type: string
+                    description: "JSONPath expression used for data extraction or evaluation, typically with 'jsonpath' rule."
+                  searchString:
+                    type: string
+                    description: "String to search for within a repository or file content (used by 'search' rule)."
+                  prometheusQuery:
+                    type: string
+                    description: "Prometheus PromQL query string (used by 'prometheus' source)."
+            spec:
+              type: object
+              description: "Specification defining the metric's display characteristics and purpose."
+              required: ["name", "description"]
+              properties:
+                name:
+                  type: string
+                  description: "The user-friendly display name for the metric, often in kebab-case."
+                description:
+                  type: string
+                  description: "A detailed description of what the metric measures, its goal, or a link to external documentation."
+                format:
+                  type: object
+                  description: "Defines the formatting or units for the metric's resulting value (primarily for display context)."
+                  properties:
+                    unit:
+                      type: string
+                      description: "Provides contextual information about the expected unit or type of result (e.g., 'Allocation Efficiency', 'Instrumentation Check', 'boolean', 'count')."
+            status:
+              type: object
+              description: "Holds the observed state of the Metric resource, managed by the controller."
+              properties:
+                id:
+                  type: string
+                  description: "A unique identifier assigned by the backend system managing metric definitions or instances (e.g., an ARI)."
+                lastEvaluated:
+                  type: string
+                  format: date-time
+                  description: "The last time the metric was evaluated."
+                observedGeneration:
+                  type: integer
+                  format: int64
+                  description: "The most recent generation observed by the controller."
+                conditions:
+                  type: array
+                  description: "Represents the latest available observations of a resource's current state using standard condition types."
+                  items:
+                    type: object
+                    required: ["type", "status", "lastTransitionTime"]
+                    properties:
+                      type:
+                        type: string
+                        description: "Type of metric condition (e.g., Ready, Evaluated, Errored)."
+                      status:
+                        type: string
+                        description: "Status of the condition, one of True, False, Unknown."
+                        enum: ["True", "False", "Unknown"]
+                      observedGeneration:
+                        type: integer
+                        format: int64
+                        description: "The generation observed for this condition's update."
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                        description: "The last time the condition transitioned from one status to another."
+                      reason:
+                        type: string
+                        description: "A brief reason for the condition's last transition."
+                      message:
+                        type: string
+                        description: "A human-readable message indicating details about the last transition."
+              x-kubernetes-preserve-unknown-fields: true
+      subresources:
+        status: {} # Allows controllers to update the status field without changing the spec
+
+      # Define additional columns shown with 'kubectl get metrics'
+      additionalPrinterColumns:
+        - name: Grading-System
+          type: string
+          description: The grading system label associated with the metric.
+          jsonPath: .metadata.labels['grading-system'] # Use bracket notation for safety with hyphen
+        - name: Component-Type
+          type: string
+          description: Component types the metric applies to.
+          jsonPath: .metadata.componentType # Displays the raw array
+        - name: Name
+          type: string
+          description: The display name defined in the spec.
+          jsonPath: .spec.name
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+        - name: Status
+          type: string
+          description: The current status of the metric.
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: Last-Evaluated
+          type: date
+          description: The last time the metric was evaluated.
+          jsonPath: .status.lastEvaluated
+  scope: Cluster
+  names:
+    plural: metrics     # Used in the API URL: /apis/of-catalog/v1alpha1/namespaces/<namespace>/metrics
+    singular: metric    # Used as an alias in kubectl commands
+    kind: Metric        # The Kind field value in resource manifests
+    shortNames:
+      - met              # Optional short alias for kubectl
