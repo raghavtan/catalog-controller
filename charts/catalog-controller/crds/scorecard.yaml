@@ -87,7 +87,6 @@ spec:
                   type: string
                   nullable: true
                   description: The unique identifier assigned to the scorecard (e.g., by an external system).
-                  default: null
                 metricsSummary:
                   type: string
                   description: A summary of the metrics used in the scorecard.

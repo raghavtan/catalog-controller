@@ -115,7 +115,6 @@ spec:
                 cronSchedule:
                   type: string
                   nullable: true
-                  default: null
                   pattern: '^(\*|\?|[0-9\/\-\,]+)\s+(\*|\?|[0-9\/\-\,]+)\s+(\*|\?|[0-9\/\-\,]+)\s+(\*|\?|[0-9\/\-\,]+|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\*|\?|[0-9\/\-\,]+|SUN|MON|TUE|WED|THU|FRI|SAT)$' # Basic 5-field cron validation
                   description: Optional cron schedule (e.g., "0 * * * *") for periodic evaluation. Uses standard 5-field cron syntax.
                 componentType:
@@ -136,7 +135,6 @@ spec:
                   type: string
                   nullable: true
                   description: A unique identifier assigned by the controller upon processing.
-                  default: null
                 conditions:
                   type: array
                   items:
