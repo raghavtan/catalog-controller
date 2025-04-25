@@ -63,6 +63,7 @@ spec:
                   type: string
                   enum: ["REQUIRED", "RECOMMENDED", "OPTIONAL"]
                   description: The importance level of the scorecard.
+                  default: REQUIRED
                 name:
                   type: string
                   description: The human-readable name of the scorecard.
@@ -73,10 +74,12 @@ spec:
                   type: string
                   enum: ["WEIGHT_BASED", "POINT_BASED"]
                   description: The strategy used for calculating the score.
+                  default: WEIGHT_BASED
                 state:
                   type: string
                   enum: ["DRAFT", "PUBLISHED", "ARCHIVED"]
                   description: The lifecycle state of the scorecard.
+                  default: DRAFT
             status:
               type: object
               properties:
@@ -84,10 +87,12 @@ spec:
                   type: string
                   nullable: true
                   description: The unique identifier assigned to the scorecard (e.g., by an external system).
+                  default: null
                 metricsSummary:
                   type: string
                   description: A summary of the metrics used in the scorecard.
                   nullable: true
+                  default: ""
                 criteria:
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
@@ -114,10 +119,14 @@ spec:
                       type:
                         type: string
                         description: Type of condition (e.g., Ready, Synced).
+                        enum: ["Ready", "Synced", "Failed", "Unknown"]
+                        nullable: true
+                        default: Unknown
                       status:
                         type: string
                         enum: ["True", "False", "Unknown"]
                         description: Status of the condition.
+                        default: Unknown
                       lastTransitionTime:
                         type: string
                         format: date-time
@@ -133,6 +142,7 @@ spec:
                     type: string
                     format: date-time
                     nullable: true
+                    default: Never
                     description: The last time the scorecard's status was evaluated or updated by the controller.
               x-kubernetes-preserve-unknown-fields: true
       subresources:
@@ -142,10 +152,6 @@ spec:
           type: string
           jsonPath: .spec.componentTypeIds
           description: Component types the scorecard applies to
-        - name: Name
-          type: string
-          jsonPath: .spec.name
-          description: Human-readable name of the Scorecard
         - name: Status
           type: string
           jsonPath: .status.conditions[?(@.type=="Ready")].status

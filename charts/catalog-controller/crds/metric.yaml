@@ -108,9 +108,14 @@ spec:
                             type: string
                             description: Environment variable name holding the authentication token.
                         description: Authentication details required for sources like 'jsonapi'.
+                evaluateOnDeploy:
+                  type: boolean
+                  description: Whether to evaluate the metric on deployment.
+                  default: false
                 cronSchedule:
                   type: string
                   nullable: true
+                  default: null
                   pattern: '^(\*|\?|[0-9\/\-\,]+)\s+(\*|\?|[0-9\/\-\,]+)\s+(\*|\?|[0-9\/\-\,]+)\s+(\*|\?|[0-9\/\-\,]+|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\*|\?|[0-9\/\-\,]+|SUN|MON|TUE|WED|THU|FRI|SAT)$' # Basic 5-field cron validation
                   description: Optional cron schedule (e.g., "0 * * * *") for periodic evaluation. Uses standard 5-field cron syntax.
                 componentType:
@@ -131,6 +136,7 @@ spec:
                   type: string
                   nullable: true
                   description: A unique identifier assigned by the controller upon processing.
+                  default: null
                 conditions:
                   type: array
                   items:
@@ -145,10 +151,14 @@ spec:
                       type:
                         type: string
                         description: Type of condition (e.g., Ready, Synced).
+                        enum: [ "Ready", "Synced", "Failed", "Unknown" ]
+                        nullable: true
+                        default: Unknown
                       status:
                         type: string
                         enum: ["True", "False", Unknown]
                         description: Status of the condition.
+                        default: Unknown
                       lastTransitionTime:
                         type: string
                         format: date-time
@@ -164,6 +174,7 @@ spec:
                    type: string
                    format: date-time
                    nullable: true
+                   default: Never
                    description: Timestamp of when the metric facts were last evaluated by the controller.
             apiVersion:
               type: string
@@ -182,10 +193,10 @@ spec:
           type: string
           description: The grading system category this metric belongs to
           jsonPath: .spec.grading-system
-        - name: Name
-          type: string
-          description: The short name/ID for the metric
-          jsonPath: .spec.name
+        - name: evaluateOnDeploy
+          type: boolean
+          description: Whether the metric is evaluated on deployment
+          jsonPath: .spec.evaluateOnDeploy
         - name: Schedule
           type: string
           description: Cron schedule for periodic evaluation of the metric
