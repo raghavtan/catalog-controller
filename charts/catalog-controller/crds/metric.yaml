@@ -124,6 +124,7 @@ spec:
               properties:
                 id:
                   type: string
+                  nullable: true
                   description: A unique identifier assigned by the controller upon processing.
                 conditions:
                   type: array
@@ -157,6 +158,7 @@ spec:
                 lastEvaluatedTime:
                    type: string
                    format: date-time
+                   nullable: true
                    description: Timestamp of when the metric facts were last evaluated by the controller.
             apiVersion:
               type: string
@@ -187,10 +189,6 @@ spec:
           type: date
           description: Timestamp of the last evaluation
           jsonPath: .status.lastEvaluatedTime
-        - name: ID
-          type: string
-          description: Unique ID assigned by the controller
-          jsonPath: .status.id
   scope: Cluster
   names:
     plural: metrics

@@ -82,6 +82,7 @@ spec:
               properties:
                 id:
                   type: string
+                  nullable: true
                   description: The unique identifier assigned to the scorecard (e.g., by an external system).
                 criteria:
                   type: object
@@ -127,6 +128,7 @@ spec:
                 lastEvaluatedTime:
                     type: string
                     format: date-time
+                    nullable: true
                     description: The last time the scorecard's status was evaluated or updated by the controller.
               x-kubernetes-preserve-unknown-fields: true
       subresources:
@@ -150,7 +152,7 @@ spec:
           description: Last time the scorecard status was evaluated
         - name: Metrics
           type: string
-          jsonPath: .spec.criteria[*].hasMetricValue.metricName
+          jsonPath: "{.spec.criteria[*].hasMetricValue.metricName}"
           description: List of metric names used in criteria
 
   scope: Cluster
