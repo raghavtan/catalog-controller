@@ -11,244 +11,168 @@ spec:
       schema:
         openAPIV3Schema:
           type: object
-          description: Represents a software component (service, library, cloud resource, etc.) within the catalog.
-          required:
-            - apiVersion
-            - kind
-            - metadata
-            - spec
           properties:
-            apiVersion:
-              type: string
-              description: 'APIVersion defines the versioned schema of this representation of an object. Must be "of-catalog/v1alpha1".'
-            kind:
-              type: string
-              description: 'Kind is a string value representing the REST resource this object represents. Must be "Component".'
-            metadata:
-              type: object
-              description: Standard Kubernetes object metadata (name, namespace, labels, annotations, etc.).
-              required:
-                - name
-                - componentType
-              properties:
-                name:
-                  type: string
-                  description: "Unique identifier name for the Component resource within its namespace."
-                componentType:
-                  type: string
-                  enum: ["service", "cloud-resource", "library"]
-                  description: "The high-level type of the component (e.g., service)."
             spec:
               type: object
-              description: "Specification defining the characteristics and relationships of the Component."
               required:
+                - componentType
                 - name
                 - typeId
-                - ownerId
-                - tribe
-                - squad
-                - links
               properties:
+                componentType:
+                  type: string
+                  description: The high-level type of the component (e.g., service, library).
                 name:
                   type: string
-                  description: "User-friendly display name for the Component, often matching metadata.name."
+                  description: The human-readable name of the component.
                 slug:
                   type: string
-                  description: "A URL-friendly slug for the component (optional)."
+                  description: A URL-friendly slug for the component.
                 description:
                   type: string
-                  description: "A brief description of the component's purpose."
+                  description: A detailed description of the component.
+                configVersion:
+                  type: integer
+                  format: int32
+                  description: Version number for the component's configuration.
                 typeId:
                   type: string
-                  description: "The specific type identifier for the component."
-                  enum: ["SERVICE", "CLOUD_RESOURCE", "LIBRARY"] # Example enum based on potential types
-                ownerId:
-                  type: string
-                  description: "Identifier for the owning team or individual (e.g., team ARI, user ID)."
+                  # Assuming specific values, add more if needed
+                  enum: ["SERVICE", "LIBRARY", "WEBSITE", "APPLICATION", "TEMPLATE", "RUNTIME"]
+                  description: A more specific identifier for the component type.
                 dependsOn:
                   type: array
-                  description: "List of other component names or identifiers that this component depends on."
                   items:
                     type: string
-                tribe:
-                  type: string
-                  description: "The organizational tribe the component belongs to."
-                squad:
-                  type: string
-                  description: "The organizational squad the component belongs to."
+                  description: List of other component names this component depends on.
+                fields:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                  description: Custom key-value fields associated with the component.
                 links:
                   type: array
-                  description: "A list of relevant links associated with the component."
-                  minItems: 1
                   items:
                     type: object
-                    required: ["name", "type", "url"]
-                    properties:
-                      name:
-                        type: string
-                        description: "Display name for the link."
-                      type:
-                        type: string
-                        description: "The type or category of the link."
-                        enum: ["REPOSITORY", "DASHBOARD", "ON_CALL", "DOCUMENTATION", "OTHER"] # Enum based on example and common types
-                      url:
-                        type: string
-                        format: uri # Validate as a URL
-                        description: "The URL of the link."
-                labels:
-                  type: array # Note: Example shows 'labels' under spec, not metadata. Adjust if this should be metadata.labels.
-                  description: "A list of free-form string labels associated with the component for categorization or filtering."
-                  items:
-                    type: string
-            status:
-              type: object
-              description: "Holds the observed state of the Component resource. This field is managed by the controller."
-              properties:
-                id:
-                  type: string
-                  description: "A unique identifier assigned by the backend system (e.g., Compass ARI) after registration."
-                metricSources:
-                  type: object
-                  description: "Status details for each metric applicable to this component, keyed by the metric name."
-                  # Allows dynamic keys matching the names of associated Metric resources
-                  additionalProperties:
-                    type: object
-                    description: "Details about a specific metric source linked to this component."
-                    required: ["id", "name", "metric", "facts"]
+                    required:
+                      - name
+                      - type
+                      - url
                     properties:
                       id:
                         type: string
-                        description: "The unique identifier (e.g., ARI) of this specific metric source instance."
+                        description: Optional identifier for the link.
                       name:
                         type: string
-                        description: "The name assigned to this metric source instance."
-                      metric:
+                        description: Display name for the link.
+                      type:
                         type: string
-                        description: "The unique identifier (e.g., ARI) of the Metric definition used."
-                      facts:
-                        type: array
-                        description: "A list of facts (steps) as defined in the associated Metric, potentially with component-specific values resolved."
-                        items:
-                          # Reusing the FactDefinition schema structure from Metric CRD
-                          # Defined inline here for completeness of this CRD file
-                          type: object
-                          description: "A single fact or step from the metric definition."
-                          required: ["id", "type"] # Minimal requirements within status context
-                          properties:
-                            id:
-                              type: string
-                              description: "Unique identifier for this fact within the metric definition."
-                            name:
-                              type: string
-                              description: "Human-readable name/description of the fact's purpose."
-                            type:
-                              type: string
-                              description: "The operational type of the fact."
-                              enum: ["extract", "aggregate", "validate"]
-                            source:
-                              type: string
-                              description: "The source system for the fact data."
-                              enum: ["github", "jsonapi", "prometheus"]
-                            rule:
-                              type: string
-                              description: "The rule engine or specific check applied."
-                              enum: ["jsonpath", "regex_match", "notempty", "search", "deps_match", "fileExists", "fileRegex"]
-                            dependsOn:
-                              type: array
-                              description: "List of fact 'id's that this fact depends on."
-                              items:
-                                type: string
-                            method:
-                              type: string
-                              description: "Aggregation method."
-                              enum: ["and", "or", "count"]
-                            pattern:
-                              type: string
-                              description: "RegEx pattern."
-                            uri:
-                              type: string
-                              description: "URI for 'jsonapi' source."
-                            auth:
-                              type: object
-                              properties:
-                                header:
-                                  type: string
-                                tokenVar:
-                                  type: string
-                              required: ["header", "tokenVar"]
-                            repo:
-                              type: string
-                              description: "Repository name for 'github' source."
-                            filePath:
-                              type: string
-                              description: "Path to the file for 'github' source."
-                            jsonPath:
-                              type: string
-                              description: "JSONPath expression."
-                            searchString:
-                              type: string
-                              description: "String to search for."
-                            prometheusQuery:
-                              type: string
-                              description: "Prometheus query string."
-                observedGeneration:
-                  type: integer
-                  format: int64
-                  description: "The most recent generation observed by the controller."
-                conditions:
+                        enum: ["REPOSITORY", "DASHBOARD", "ON_CALL", "CHAT_CHANNEL", "PROJECT", "DOCUMENTATION", "API_DOCUMENTATION"]
+                        description: The type of the link.
+                      url:
+                        type: string
+                        format: uri
+                        description: The URL the link points to.
+                  description: A list of relevant links for the component.
+                documents:
                   type: array
-                  description: "Represents the latest available observations of the resource's current state."
-                  x-kubernetes-list-map-keys: ["type"]
-                  x-kubernetes-list-type: map
                   items:
                     type: object
-                    required: ["type", "status", "lastTransitionTime", "reason", "message"]
+                    x-kubernetes-preserve-unknown-fields: true
+                  description: Associated documents or documentation references.
+                labels:
+                  type: array
+                  items:
+                    type: string
+                  description: Tags or labels for categorizing the component.
+                tribe:
+                  type: string
+                  description: The tribe or larger organizational unit the component belongs to.
+                squad:
+                  type: string
+                  description: The squad or team directly responsible for the component.
+            status:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: The unique identifier assigned to the component (e.g., by an external system like Compass).
+                ownerId:
+                  type: string
+                  description: The identifier of the owning team or entity.
+                metricSources:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                  additionalProperties:
+                    type: object
+                    required:
+                      - id
+                      - name
+                      - metric
+                    properties:
+                      id:
+                        type: string
+                        description: The unique identifier of the metric source.
+                      name:
+                        type: string
+                        description: The name of the metric source.
+                      metric:
+                        type: string
+                        description: The identifier of the associated metric definition.
+                      facts:
+                        type: array
+                        items:
+                          type: object
+                          x-kubernetes-preserve-unknown-fields: true
+                        description: Additional facts or data related to the metric source.
+                  description: Status for each metric source associated with the component, keyed by metric name.
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - type
+                      - status
+                      - lastTransitionTime
+                      - reason
+                      - message
                     properties:
                       type:
                         type: string
-                        description: "Type of component condition (e.g., Ready, Synced)."
+                        description: Type of condition (e.g., Ready, Synced).
                       status:
                         type: string
-                        description: "Status of the condition, one of True, False, Unknown."
                         enum: ["True", "False", "Unknown"]
-                      observedGeneration:
-                        type: integer
-                        format: int64
-                        description: "The generation observed for this condition's update."
+                        description: Status of the condition.
                       lastTransitionTime:
                         type: string
                         format: date-time
-                        description: "The last time the condition transitioned from one status to another."
+                        description: Last time the condition transitioned from one status to another.
                       reason:
                         type: string
-                        description: "A brief, machine-readable reason for the condition's last transition."
+                        description: A unique, one-word, CamelCase reason for the condition's last transition.
                       message:
                         type: string
-                        description: "A human-readable message indicating details about the last transition."
-              x-kubernetes-preserve-unknown-fields: true
+                        description: A human-readable message indicating details about the last transition.
+                  description: Represents the latest available observations of the component's state.
       subresources:
         status: {}
       additionalPrinterColumns:
         - name: Type
           type: string
-          description: The component type identifier from the spec.
-          jsonPath: .spec.typeId
-        - name: Tribe
+          jsonPath: .spec.componentType
+          description: High-level type of the Component
+        - name: Name
           type: string
-          description: The organizational tribe.
-          jsonPath: .spec.tribe
-        - name: Squad
+          jsonPath: .spec.name
+          description: Human-readable name of the Component
+        - name: Status
           type: string
-          description: The organizational squad.
-          jsonPath: .spec.squad
-        - name: Age
-          type: date
-          description: The age of the Component resource.
-          jsonPath: .metadata.creationTimestamp
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+          description: The Ready status condition
   scope: Namespaced
   names:
     plural: components
     singular: component
     kind: Component
     shortNames:
-      - comp
+    - comp

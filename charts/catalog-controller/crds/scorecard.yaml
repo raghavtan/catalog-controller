@@ -11,196 +11,152 @@ spec:
       schema:
         openAPIV3Schema:
           type: object
-          description: Represents a Scorecard used to evaluate components based on a set of criteria derived from associated Metrics.
-          required:
-            - apiVersion
-            - kind
-            - metadata
-            - spec
           properties:
-            apiVersion:
-              type: string
-              description: 'APIVersion defines the versioned schema of this representation of an object. Must be "of-catalog/v1alpha1".'
-            kind:
-              type: string
-              description: 'Kind is a string value representing the REST resource this object represents. Must be "Scorecard".'
-            metadata:
-              type: object
-              description: Standard Kubernetes object metadata (name, namespace, labels, annotations, etc.).
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-                  description: "Unique identifier name for the Scorecard resource within its namespace."
             spec:
               type: object
-              description: "Specification defining the configuration and evaluation criteria for the Scorecard."
               required:
-                - name
-                - description
-                - ownerId
-                - state
                 - componentTypeIds
-                - importance
-                - scoringStrategyType
                 - criteria
+                - name
+                - scoringStrategyType
               properties:
-                name:
-                  type: string
-                  description: "User-friendly display name for the Scorecard, often matching metadata.name."
-                description:
-                  type: string
-                  description: "Detailed description of the Scorecard's purpose, potentially a URL to documentation."
-                ownerId:
-                  type: string
-                  description: "Identifier for the owner or team responsible for this Scorecard."
-                  pattern: "^[\\w\\-]+:[\\w\\-]+$"
-                state:
-                  type: string
-                  description: "The current lifecycle state of the Scorecard definition."
-                  enum: ["DRAFT", "PUBLISHED"]
                 componentTypeIds:
                   type: array
-                  description: "List of component types (e.g., SERVICE) that this Scorecard applies to."
-                  minItems: 1
                   items:
                     type: string
-                    enum: ["SERVICE", "CLOUD_RESOURCE"]
-                importance:
-                  type: string
-                  description: "The importance level assigned to this Scorecard."
-                  enum: ["REQUIRED"]
-                scoringStrategyType:
-                  type: string
-                  description: "The method used to calculate the score based on criteria."
-                  enum: ["WEIGHT_BASED", "POINT_BASED"]
+                  description: List of component types this scorecard applies to.
                 criteria:
                   type: array
-                  description: "A list of criteria used to evaluate components against this Scorecard."
-                  minItems: 1
                   items:
                     type: object
-                    description: "A single criterion for evaluation. Currently supports 'hasMetricValue'."
-                    required: ["hasMetricValue"] # Based on examples, only this type is shown
                     properties:
                       hasMetricValue:
                         type: object
-                        description: "Criterion checking if a component has a specific metric value meeting a condition."
                         required:
-                          - weight # Assuming weight is always needed for now, even if POINT_BASED might use it differently
-                          - name
-                          - metricName
-                          - comparatorValue
                           - comparator
+                          - comparatorValue
+                          - metricName
+                          - name
+                          - weight
                         properties:
-                          weight:
-                            type: integer
-                            format: int32 # Or int64 if weights can be very large
-                            description: "The weight assigned to this criterion (used in WEIGHT_BASED strategy)."
-                            minimum: 0 # Weight likely non-negative
-                          name:
-                            type: string
-                            description: "A unique name for this criterion within the Scorecard."
-                          metricName:
-                            type: string
-                            description: "The name of the associated Metric resource (matching Metric's metadata.name)."
-                          comparatorValue:
-                            # Using number to allow for integers and potentially floats in the future
-                            type: number
-                            description: "The value to compare the metric's result against."
                           comparator:
                             type: string
-                            description: "The comparison operator to use."
-                            enum: ["EQUALS", "GREATER_THAN", "LESS_THAN", "GREATER_THAN_OR_EQUAL_TO", "LESS_THAN_OR_EQUAL_TO"]
+                            enum: ["EQUALS", "LESS_THAN", "GREATER_THAN", "NOT_EQUALS"]
+                            description: The comparison operator.
+                          comparatorValue:
+                            x-kubernetes-int-or-string: true
+                            description: The value to compare the metric against.
+                          metricName:
+                            type: string
+                            description: The internal name/key of the metric.
+                          name:
+                            type: string
+                            description: The display name of the criterion.
+                          weight:
+                            type: integer
+                            format: int32
+                            description: The weight of this criterion in the scoring.
+                description:
+                  type: string
+                  description: A URL or text describing the scorecard.
+                importance:
+                  type: string
+                  enum: ["REQUIRED", "RECOMMENDED", "OPTIONAL"]
+                  description: The importance level of the scorecard.
+                name:
+                  type: string
+                  description: The human-readable name of the scorecard.
+                ownerId:
+                  type: string
+                  description: The identifier of the owner/team responsible for this scorecard.
+                scoringStrategyType:
+                  type: string
+                  enum: ["WEIGHT_BASED", "POINT_BASED"]
+                  description: The strategy used for calculating the score.
+                state:
+                  type: string
+                  enum: ["DRAFT", "PUBLISHED", "ARCHIVED"]
+                  description: The lifecycle state of the scorecard.
             status:
               type: object
-              description: "Holds the observed state of the Scorecard resource. This field is managed by the controller."
               properties:
                 id:
                   type: string
-                  description: "A unique identifier assigned by the backend system after processing or registration (e.g., an ARI)."
+                  description: The unique identifier assigned to the scorecard (e.g., by an external system).
                 criteria:
                   type: object
-                  description: "Status details for each criterion defined in the spec, keyed by the criterion name."
-                  # Allows dynamic keys matching spec.criteria[*].hasMetricValue.name
+                  x-kubernetes-preserve-unknown-fields: true
                   additionalProperties:
                     type: object
-                    description: "Status information for a specific criterion."
-                    required: ["metricDefinitionId"]
                     properties:
                       metricDefinitionId:
                         type: string
-                        description: "The unique identifier (e.g., ARI) of the specific Metric definition version used for this criterion during the last evaluation."
-                # Standard Kubernetes status fields can be added here
-                observedGeneration:
-                  type: integer
-                  format: int64
-                  description: "The most recent generation observed by the controller."
+                        description: The unique identifier of the corresponding metric definition.
+                    required:
+                      - metricDefinitionId
+                  description: Status for each criterion, keyed by the criterion's metric name.
                 conditions:
                   type: array
-                  description: "Represents the latest available observations of the resource's current state."
-                  x-kubernetes-list-map-keys: ["type"]
-                  x-kubernetes-list-type: map
                   items:
                     type: object
-                    required: ["type", "status", "lastTransitionTime", "reason", "message"]
+                    required:
+                      - type
+                      - status
+                      - lastTransitionTime
+                      - reason
+                      - message
                     properties:
                       type:
                         type: string
-                        description: "Type of scorecard condition (e.g., Ready, Synced)."
+                        description: Type of condition (e.g., Ready, Synced).
                       status:
                         type: string
-                        description: "Status of the condition, one of True, False, Unknown."
                         enum: ["True", "False", "Unknown"]
-                      observedGeneration:
-                        type: integer
-                        format: int64
-                        description: "The generation observed for this condition's update."
+                        description: Status of the condition.
                       lastTransitionTime:
                         type: string
                         format: date-time
-                        description: "The last time the condition transitioned from one status to another."
+                        description: Last time the condition transitioned from one status to another.
                       reason:
                         type: string
-                        description: "A brief, machine-readable reason for the condition's last transition."
+                        description: A unique, one-word, CamelCase reason for the condition's last transition.
                       message:
                         type: string
-                        description: "A human-readable message indicating details about the last transition."
-
-              # Allow other fields not explicitly defined in the schema to be preserved in the status block.
+                        description: A human-readable message indicating details about the last transition.
+                  description: Represents the latest available observations of the scorecard's state.
+                lastEvaluatedTime:
+                    type: string
+                    format: date-time
+                    description: The last time the scorecard's status was evaluated or updated by the controller.
               x-kubernetes-preserve-unknown-fields: true
-
-      # Enable the /status subresource for proper status management by controllers
       subresources:
-        status: {} # The empty object enables the status subresource
-
-      # Define additional columns shown with 'kubectl get scorecards'
+        status: {}
       additionalPrinterColumns:
-        - name: State
+        - name: Component Types
           type: string
-          description: The lifecycle state of the Scorecard definition.
-          jsonPath: .spec.state
-        - name: Strategy
-          type: string
-          description: The scoring strategy used (WEIGHT_BASED or POINT_BASED).
-          jsonPath: .spec.scoringStrategyType
-        - name: Components
-          type: string
-          description: Component types the Scorecard applies to.
           jsonPath: .spec.componentTypeIds
-        - name: Age
-          type: date
-          description: The age of the Scorecard resource.
-          jsonPath: .metadata.creationTimestamp
+          description: Component types the scorecard applies to
+        - name: Name
+          type: string
+          jsonPath: .spec.name
+          description: Human-readable name of the Scorecard
         - name: Status
           type: string
-          description: The current status of the Scorecard resource.
           jsonPath: .status.conditions[?(@.type=="Ready")].status
+          description: The Ready status condition
+        - name: Last-Evaluated
+          type: date
+          jsonPath: .status.lastEvaluatedTime
+          description: Last time the scorecard status was evaluated
+        - name: Metrics
+          type: string
+          jsonPath: .spec.criteria[*].hasMetricValue.metricName
+          description: List of metric names used in criteria
+
   scope: Cluster
   names:
     plural: scorecards
     singular: scorecard
     kind: Scorecard
     shortNames:
-      - sc
+    - sc

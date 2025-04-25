@@ -1,0 +1,200 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: metrics.catalog.onefootball.com
+spec:
+  group: catalog.onefootball.com
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: Defines the desired state of Metric.
+              required:
+                - name
+                - description
+                - format
+                - facts
+                - grading-system
+                - componentType
+              properties:
+                description:
+                  type: string
+                  description: URL or text describing the metric.
+                format:
+                  type: object
+                  required:
+                    - unit
+                  properties:
+                    unit:
+                      type: string
+                      description: The unit of measurement or classification for the metric.
+                  description: Format details for the metric's value or outcome.
+                name:
+                  type: string
+                  description: The short name for the metric, often used in IDs.
+                facts:
+                  type: array
+                  description: A list of facts (checks or data extractions) used to calculate the metric.
+                  items:
+                    type: object
+                    required:
+                      - id
+                      - type
+                    properties:
+                      id:
+                        type: string
+                        description: Unique identifier for the fact within the metric.
+                      name:
+                        type: string
+                        description: Human-readable name for the fact.
+                      type:
+                        type: string
+                        enum: [extract, aggregate, validate]
+                        description: The type of operation this fact performs.
+                      dependsOn:
+                        type: array
+                        items:
+                          type: string
+                        description: List of fact IDs this fact depends on.
+                      source:
+                        type: string
+                        enum: [github, jsonapi, prometheus]
+                        description: The source system for 'extract' type facts.
+                      rule:
+                        type: string
+                        enum: [jsonpath, notempty, search, deps_match, regex_match]
+                        description: The rule used for extraction or validation.
+                      method:
+                        type: string
+                        enum: [and, or, count]
+                        description: The aggregation method for 'aggregate' type facts.
+                      repo:
+                        type: string
+                        description: GitHub repository name (often uses template ${Metadata.Name}). Used with source 'github'.
+                      filePath:
+                        type: string
+                        description: Path to a file within the repository. Used with source 'github'.
+                      jsonPath:
+                        type: string
+                        description: JSONPath expression for data extraction. Used with source 'github' or 'jsonapi'.
+                      searchString:
+                        type: string
+                        description: String to search for in files. Used with source 'github' and rule 'search'.
+                      prometheusQuery:
+                        type: string
+                        description: PromQL query. Used with source 'prometheus'.
+                      uri:
+                        type: string
+                        description: URI for JSON API endpoint. Used with source 'jsonapi'.
+                      pattern:
+                        type: string
+                        description: Regular expression pattern for validation. Used with type 'validate' and rule 'regex_match'.
+                      auth:
+                        type: object
+                        nullable: true
+                        properties:
+                          header:
+                            type: string
+                            description: Authentication header name.
+                          tokenVar:
+                            type: string
+                            description: Environment variable name holding the authentication token.
+                        description: Authentication details required for sources like 'jsonapi'.
+                componentType:
+                  type: array
+                  items:
+                    type: string
+                    enum: [service, cloud-resource]
+                  description: The type of components this metric applies to.
+                grading-system:
+                  type: string
+                  enum: [resiliency, observability, production-readiness, security, cost-optimization]
+                  description: The grading system category this metric belongs to.
+            status:
+              type: object
+              description: Represents the observed state of Metric.
+              properties:
+                id:
+                  type: string
+                  description: A unique identifier assigned by the controller upon processing.
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - type
+                      - status
+                      - lastTransitionTime
+                      - reason
+                      - message
+                    properties:
+                      type:
+                        type: string
+                        description: Type of condition (e.g., Ready, Synced).
+                      status:
+                        type: string
+                        enum: ["True", "False", Unknown]
+                        description: Status of the condition.
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                        description: The last time the condition transitioned from one status to another.
+                      reason:
+                        type: string
+                        description: A brief, machine-readable reason for the condition's last transition.
+                      message:
+                        type: string
+                        description: A human-readable message indicating details about the last transition.
+                  description: Represents the latest available observations of the metric's state.
+                lastEvaluatedTime:
+                   type: string
+                   format: date-time
+                   description: Timestamp of when the metric facts were last evaluated by the controller.
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+          required:
+            - spec
+      additionalPrinterColumns:
+        - name: Component-Type
+          type: string
+          description: The type of component(s) this metric applies to
+          jsonPath: .spec.componentType
+        - name: Grading-System
+          type: string
+          description: The grading system category this metric belongs to
+          jsonPath: .spec.grading-system
+        - name: Name
+          type: string
+          description: The short name/ID for the metric
+          jsonPath: .spec.name
+        - name: Status
+          type: string
+          description: The Ready status of the metric
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: Last-Evaluated
+          type: date
+          description: Timestamp of the last evaluation
+          jsonPath: .status.lastEvaluatedTime
+        - name: ID
+          type: string
+          description: Unique ID assigned by the controller
+          jsonPath: .status.id
+  scope: Cluster
+  names:
+    plural: metrics
+    singular: metric
+    kind: Metric
+    shortNames:
+    - mtr
