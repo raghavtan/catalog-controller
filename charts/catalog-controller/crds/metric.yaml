@@ -108,6 +108,11 @@ spec:
                             type: string
                             description: Environment variable name holding the authentication token.
                         description: Authentication details required for sources like 'jsonapi'.
+                cronSchedule:
+                  type: string
+                  nullable: true
+                  pattern: '^(\*|\?|[0-9\/\-\,]+)\s+(\*|\?|[0-9\/\-\,]+)\s+(\*|\?|[0-9\/\-\,]+)\s+(\*|\?|[0-9\/\-\,]+|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\*|\?|[0-9\/\-\,]+|SUN|MON|TUE|WED|THU|FRI|SAT)$' # Basic 5-field cron validation
+                  description: Optional cron schedule (e.g., "0 * * * *") for periodic evaluation. Uses standard 5-field cron syntax.
                 componentType:
                   type: array
                   items:
@@ -181,6 +186,10 @@ spec:
           type: string
           description: The short name/ID for the metric
           jsonPath: .spec.name
+        - name: Schedule
+          type: string
+          description: Cron schedule for periodic evaluation of the metric
+          jsonPath: .spec.cronSchedule
         - name: Status
           type: string
           description: The Ready status of the metric
