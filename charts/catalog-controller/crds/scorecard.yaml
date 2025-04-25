@@ -142,7 +142,6 @@ spec:
                     type: string
                     format: date-time
                     nullable: true
-                    default: Never
                     description: The last time the scorecard's status was evaluated or updated by the controller.
               x-kubernetes-preserve-unknown-fields: true
       subresources:

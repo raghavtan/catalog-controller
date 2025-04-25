@@ -174,7 +174,6 @@ spec:
                    type: string
                    format: date-time
                    nullable: true
-                   default: Never
                    description: Timestamp of when the metric facts were last evaluated by the controller.
             apiVersion:
               type: string
