@@ -1,0 +1,23 @@
+apiVersion: catalog.onefootball.com/v1alpha1
+kind: Metric
+metadata:
+  name: observability-documentation
+spec:
+  description: https://github.com/motain/of-catalog/blob/main/docs/grading-system/observability.md#observability-documentation
+  format:
+    unit: Observability Documentation
+  name: observability-documentation
+  facts:
+    - auth: null
+      filePath: docs/observability.md
+      id: extract-observability-md
+      name: Extract observability.md
+      repo: ${Metadata.Name}
+      rule: notempty
+      source: github
+      type: extract
+  componentType:
+    - service
+    - cloud-resource
+  grading-system: observability
+  cronSchedule: "0 * * * *"

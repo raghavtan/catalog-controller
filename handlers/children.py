@@ -15,10 +15,10 @@ def generate_child_resources(resource_kind: str, parent: Dict[str, Any],
         desired_cronjob = build_metric_evaluator_cronjob(parent)
         if desired_cronjob:
             desired_children.append(desired_cronjob)
-            set_condition(desired_status["conditions"], "CronJobDefined", "True",
+            set_condition(desired_status["conditions"], "Ready", "True",
                           "Defined", "Desired CronJob defined.")
         else:
-            set_condition(desired_status["conditions"], "CronJobDefined", "False",
+            set_condition(desired_status["conditions"], "Ready", "False",
                           "Absent", "No CronJob desired as cronSchedule is absent.")
 
     return desired_children

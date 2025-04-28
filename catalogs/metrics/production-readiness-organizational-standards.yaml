@@ -1,0 +1,58 @@
+apiVersion: catalog.onefootball.com/v1alpha1
+kind: Metric
+metadata:
+  name: organizational-standards
+spec:
+  description: https://github.com/motain/of-catalog/blob/main/docs/grading-system/production-readiness.md#organizational-standards
+  format:
+    unit: Organizational Standards
+  name: organizational-standards
+  facts:
+    - filePath: README.md
+      id: readme-file
+      name: Check if the README.md file exists
+      repo: ${Metadata.Name}
+      rule: notempty
+      source: github
+      type: extract
+    - filePath: docs/README.md
+      id: docs-readme-file
+      name: Check if the docs/README.md file exists
+      repo: ${Metadata.Name}
+      rule: notempty
+      source: github
+      type: extract
+    - filePath: docs/index.md
+      id: docs-index-file
+      name: Check if the docs/index.md file exists
+      repo: ${Metadata.Name}
+      rule: notempty
+      source: github
+      type: extract
+    - id: paas-onboarded
+      name: Check if the service is using PaaS
+      repo: ${Metadata.Name}
+      rule: search
+      searchString: motain/onefootball-actions/paas-deploy@master
+      source: github
+      type: extract
+    - dependsOn:
+        - docs-index-file
+        - docs-readme-file
+        - readme-file
+      id: aggregate-readme-exists
+      method: or
+      name: Check if repo has documentation
+      type: aggregate
+    - dependsOn:
+        - aggregate-readme-exists
+        - paas-onboarded
+      id: aggregate
+      method: and
+      name: Check if repo follows organizational standards
+      type: aggregate
+  componentType:
+  - service
+  - cloud-resource
+  grading-system: production-readiness
+  cronSchedule: "0 * * * *"
