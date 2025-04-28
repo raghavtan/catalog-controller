@@ -16,6 +16,7 @@ spec:
   {{- end }}
   {{- end }}
   resyncPeriodSeconds: {{ .resyncPeriod }}
+  generateSelector: true
   hooks:
     sync:
       webhook:
