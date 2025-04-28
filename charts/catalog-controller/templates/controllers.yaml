@@ -9,7 +9,7 @@ spec:
     apiVersion: catalog.onefootball.com/v1alpha1
     resource: {{ .resource }}
   {{- if .children }} # Only include children if defined
-  children:
+  childResources:
   {{- range .children }}
     - apiVersion: {{ .apiVersion }}
       resource: {{ .resource }}
