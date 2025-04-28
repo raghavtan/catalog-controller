@@ -15,6 +15,7 @@ endif
 # Virtual environment directory
 VENV := venv
 
+
 # Python commands
 PYTHON := $(VENV)/bin/python3
 PIP := $(VENV)/bin/pip

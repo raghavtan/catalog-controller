@@ -17,7 +17,6 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    uses:
     steps:
       - uses: actions/checkout@v4
         with:
