@@ -1,7 +1,7 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: metrics.catalog.onefootball.com
+  name: metric.catalog.onefootball.com
 spec:
   group: catalog.onefootball.com
   versions:

@@ -3,6 +3,7 @@ from typing import Dict, Any, List
 
 from handlers.scheduler import build_metric_evaluator_cronjob
 from utils import set_condition
+from models import ResourceKind
 
 logger = logging.getLogger("ChildrenSubHandler")
 
@@ -11,7 +12,7 @@ def generate_child_resources(resource_kind: str, parent: Dict[str, Any],
                              desired_status: Dict[str, Any]) -> List[Dict[str, Any]]:
     desired_children = []
 
-    if resource_kind == "metrics":
+    if resource_kind == ResourceKind.METRIC:
         desired_cronjob = build_metric_evaluator_cronjob(parent)
         if desired_cronjob:
             desired_children.append(desired_cronjob)

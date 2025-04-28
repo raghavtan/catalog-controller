@@ -32,7 +32,40 @@ probes:
     initialDelaySeconds: 5
     periodSeconds: 10
 
-controllers: []
+resyncPeriodSeconds: &resyncPeriodSeconds 600
+timeoutSeconds: &timeoutSeconds "600s"
+
+controllers:
+  - resource: "component"
+    resyncPeriod: *resyncPeriodSeconds
+    service: catalog-controller.catalog-controller.svc.cluster.local
+    sync:
+      path: "/sync/component"
+      timeout: *timeoutSeconds
+    finalizer:
+      path: "/finalize/component"
+      timeout: *timeoutSeconds
+  - resource: "scorecard"
+    resyncPeriod: *resyncPeriodSeconds
+    service: catalog-controller.catalog-controller.svc.cluster.local
+    sync:
+      path: "/sync/scorecard"
+      timeout: *timeoutSeconds
+    finalizer:
+      path: "/finalize/scorecard"
+      timeout: *timeoutSeconds
+  - resource: "metric"
+    resyncPeriod: *resyncPeriodSeconds
+    service: catalog-controller.catalog-controller.svc.cluster.local
+    sync:
+      path: "/sync/metric"
+      timeout: *timeoutSeconds
+    finalizer:
+      path: "/finalize/metric"
+      timeout: *timeoutSeconds
+    children:
+      - apiVersion: batch/v1
+        resource: cronjobs
 
 env: []
 

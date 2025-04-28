@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Any, Optional, Tuple
-
+from models import ResourceKind
 from utils import set_condition, call_compass_api, handle_transient_error, handle_persistent_error
 
 logger = logging.getLogger("CompassSubHandler")
@@ -26,7 +26,7 @@ def fetch_compass_state(compass_id: Optional[str], resource_kind: str, resource_
         else:
             logger.warning(f"Compass ID {compass_id} found but resource doesn't exist. Re-creating.")
             desired_status.pop("id", None)
-            if resource_kind == "Component":
+            if resource_kind == ResourceKind.COMPONENT :
                 desired_status.pop("metricSources", None)
             set_condition(desired_status["conditions"], "Synced", "False", "StateMismatch",
                           f"Resource doesn't exist in Compass. Re-creating.")
@@ -73,9 +73,9 @@ def update_compass_resource(resource_kind: str, resource_spec: Dict[str, Any], c
     api_result = call_compass_api(resource_kind, "update", resource_spec, status=current_status, compass_id=compass_id)
 
     if api_result["success"]:
-        if resource_kind == "Component" and "metricSources" in api_result:
+        if resource_kind == ResourceKind.COMPONENT and "metricSources" in api_result:
             desired_status["metricSources"] = api_result["metricSources"]
-        if resource_kind == "Scorecard":
+        if resource_kind == ResourceKind.SCORECARD:
             desired_status["metricsSummary"] = ", ".join(
                 [c.get("metricName", "unknown") for c in resource_spec.get("criteria", [])])
 
@@ -93,9 +93,9 @@ def update_compass_resource(resource_kind: str, resource_spec: Dict[str, Any], c
 
 def needs_update(resource_kind: str, resource_spec: Dict[str, Any], compass_state: Dict[str, Any]) -> bool:
     diff_fields = {
-        "Metric": ["description", "format", "grading-system"],
-        "Scorecard": ["description", "importance", "state"],
-        "Component": ["description", "componentType", "slug", "typeId"]
+        "metric": ["description", "format", "grading-system"],
+        "scorecard": ["description", "importance", "state"],
+        "component": ["description", "componentType", "slug", "typeId"]
     }.get(resource_kind, [])
 
     return any(resource_spec.get(field) != compass_state.get(field) for field in diff_fields)
@@ -105,12 +105,12 @@ def handle_no_update_needed(resource_kind: str, compass_id: str, compass_state: 
                             resource_spec: Dict[str, Any], desired_status: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"No differences detected for {resource_kind} {compass_id} in Compass state")
 
-    if resource_kind == "Scorecard":
+    if resource_kind == ResourceKind.SCORECARD:
         desired_status["metricsSummary"] = ", ".join(
             [c.get("metricName", "unknown") for c in resource_spec.get("criteria", [])])
         if compass_state and "criteria" in compass_state:
             desired_status["criteria"] = compass_state["criteria"]
-    elif resource_kind == "Component" and compass_state and "metricSources" in compass_state:
+    elif resource_kind == ResourceKind.COMPONENT and compass_state and "metricSources" in compass_state:
         desired_status["metricSources"] = compass_state["metricSources"]
 
     set_condition(desired_status["conditions"], "Ready", "True", "InSync",

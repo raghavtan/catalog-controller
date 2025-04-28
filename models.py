@@ -56,6 +56,6 @@ class FinalizeResponse(BaseModel):
 
 
 class ResourceKind(str, Enum):
-    COMPONENT = "components"
-    SCORECARD = "scorecards"
-    METRIC = "metrics"
+    COMPONENT = "component"
+    SCORECARD = "scorecard"
+    METRIC = "metric"

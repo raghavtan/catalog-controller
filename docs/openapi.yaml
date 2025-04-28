@@ -126,9 +126,9 @@ components:
       type: object
     ResourceKind:
       enum:
-      - components
-      - scorecards
-      - metrics
+      - component
+      - scorecard
+      - metric
       title: ResourceKind
       type: string
     ValidationError:
