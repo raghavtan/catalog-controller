@@ -1,0 +1,14 @@
+repos:
+  - repo: local
+    hooks:
+      - id: generate-openapi
+        name: Generate OpenAPI YAML
+        entry: python3 openapi.py
+        language: system
+        pass_filenames: false
+      - id: check-openapi-updated
+        name: Ensure OpenAPI is up-to-date
+        entry: bash -c "git diff --exit-code docs/openapi.yaml"
+        language: system
+        pass_filenames: false
+

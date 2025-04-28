@@ -1,4 +1,3 @@
-{{/* vim: set filetype=mustache: */}}
 {{/*
 Expand the name of the chart.
 */}}
@@ -8,6 +7,8 @@ Expand the name of the chart.
 
 {{/*
 Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
 */}}
 {{- define "catalog-controller.fullname" -}}
 {{- if .Values.fullnameOverride }}
@@ -26,7 +27,7 @@ Create a default fully qualified app name.
 Create chart name and version as used by the chart label.
 */}}
 {{- define "catalog-controller.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" | default "catalog"}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -57,16 +58,5 @@ Create the name of the service account to use
 {{- default (include "catalog-controller.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
-{{- end }}
-{{- end }}
-
-{{/*
-Get the secret name
-*/}}
-{{- define "catalog-controller.secretName" -}}
-{{- if .Values.compass.credentials.existingSecret }}
-{{- .Values.compass.credentials.existingSecret }}
-{{- else }}
-{{- printf "%s-compass-credentials" (include "catalog-controller.fullname" .) }}
 {{- end }}
 {{- end }}

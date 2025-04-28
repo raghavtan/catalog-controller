@@ -1,0 +1,230 @@
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          title: Detail
+          type: array
+      title: HTTPValidationError
+      type: object
+    KubernetesMetadata:
+      properties:
+        annotations:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          title: Annotations
+        creationTimestamp:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Creationtimestamp
+        deletionTimestamp:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Deletiontimestamp
+        finalizers:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Finalizers
+        generation:
+          title: Generation
+          type: integer
+        labels:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          title: Labels
+        name:
+          title: Name
+          type: string
+        namespace:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Namespace
+        resourceVersion:
+          title: Resourceversion
+          type: string
+        uid:
+          title: Uid
+          type: string
+      required:
+      - name
+      - uid
+      - resourceVersion
+      - generation
+      title: KubernetesMetadata
+      type: object
+    MetacontrollerRequest:
+      properties:
+        children:
+          additionalProperties:
+            additionalProperties: true
+            type: object
+          title: Children
+          type: object
+        controller:
+          additionalProperties: true
+          title: Controller
+          type: object
+        finalizing:
+          title: Finalizing
+          type: boolean
+        parent:
+          $ref: '#/components/schemas/ParentResource'
+        related:
+          additionalProperties:
+            additionalProperties: true
+            type: object
+          title: Related
+          type: object
+      required:
+      - controller
+      - parent
+      - finalizing
+      title: MetacontrollerRequest
+      type: object
+    ParentResource:
+      properties:
+        apiVersion:
+          title: Apiversion
+          type: string
+        kind:
+          title: Kind
+          type: string
+        metadata:
+          $ref: '#/components/schemas/KubernetesMetadata'
+        spec:
+          additionalProperties: true
+          title: Spec
+          type: object
+        status:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Status
+      required:
+      - apiVersion
+      - kind
+      - metadata
+      - spec
+      title: ParentResource
+      type: object
+    ResourceKind:
+      enum:
+      - components
+      - scorecards
+      - metrics
+      title: ResourceKind
+      type: string
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          title: Location
+          type: array
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+      type: object
+info:
+  description: Automatically generated OpenAPI schema.
+  title: Simple FastAPI app
+  version: 1.0.0
+openapi: 3.1.0
+paths:
+  /finalize/{resource_kind}:
+    post:
+      operationId: finalize_generic_finalize__resource_kind__post
+      parameters:
+      - description: Resource kind to sync (e.g., 'components', 'scorecards', 'metrics')
+        in: path
+        name: resource_kind
+        required: true
+        schema:
+          $ref: '#/components/schemas/ResourceKind'
+          description: Resource kind to sync (e.g., 'components', 'scorecards', 'metrics')
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetacontrollerRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Finalize Generic
+  /healthz:
+    get:
+      operationId: health_check_healthz_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: Successful Response
+      summary: Health Check
+  /sync/{resource_kind}:
+    post:
+      operationId: sync_generic_sync__resource_kind__post
+      parameters:
+      - description: Resource kind to sync (e.g., 'components', 'scorecards', 'metrics')
+        in: path
+        name: resource_kind
+        required: true
+        schema:
+          $ref: '#/components/schemas/ResourceKind'
+          description: Resource kind to sync (e.g., 'components', 'scorecards', 'metrics')
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetacontrollerRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Sync Generic

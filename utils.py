@@ -1,5 +1,8 @@
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
+import logging
+
+logger = logging.getLogger("Utils")
 
 def get_condition(conditions: List[Dict[str, Any]], condition_type: str) -> Optional[Dict[str, Any]]:
     return next((c for c in conditions if c and c.get("type") == condition_type), None)
@@ -18,3 +21,26 @@ def set_condition(conditions: List[Dict[str, Any]], condition_type: str, status:
     else:
         condition["lastTransitionTime"] = now if condition.get("status") != status else condition["lastTransitionTime"]
         condition.update({ "status": status,"reason": reason, "message": message })
+
+def handle_transient_error(desired_status: Dict[str, Any], message: str) -> None:
+    logger.warning(message)
+    set_condition(desired_status["conditions"], "Synced", "Unknown", "TransientError", f"Transient error: {message}")
+    set_condition(desired_status["conditions"], "Ready", "Unknown", "TransientError", f"Transient error: {message}")
+
+
+def handle_persistent_error(desired_status: Dict[str, Any], message: str) -> None:
+    logger.error(message)
+    set_condition(desired_status["conditions"], "Ready", "False", "ReconciliationFailed", message)
+    set_condition(desired_status["conditions"], "Synced", "False", "SyncFailed", message)
+
+
+def is_sync_successful(desired_status: Dict[str, Any]) -> bool:
+    synced_condition = get_condition(desired_status["conditions"], "Synced")
+    return synced_condition and synced_condition["status"] == "True"
+
+def call_compass_api(resource_kind: str, operation: str, spec: Dict[str, Any], status: Dict[str, Any], compass_id: Optional[str] = None) -> Dict[str, Any]:
+    logger.info(f"Calling dummy Compass API: {resource_kind} {operation} id={compass_id}")
+
+    # Call compass-service API here
+    # This will be implemented later
+

@@ -1,25 +1,25 @@
 import logging
 import sys
 
-from fastapi import JSONResponse
+from fastapi.responses import JSONResponse
 
-from compass import call_compass_api
+from utils import call_compass_api
 from models import MetacontrollerRequest, FinalizeResponse
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr,
                     format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger("SyncLogger")
+logger = logging.getLogger("FinalizeHandler")
 
 
 def finalize_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JSONResponse:
     parent = request_data.parent.model_dump(by_alias=True)
     resource_name = parent["metadata"]["name"]
+    namespace = parent["metadata"].get("namespace", "default")
     compass_id = parent.get("status", {}).get("id")
-
-    logger.info(f"Finalizing {resource_kind}: {resource_name}")
+    logger.info(f"Finalizing {resource_kind}: {resource_name} in namespace {namespace}")
 
     if not compass_id:
-        logger.info(f"No Compass ID for {resource_kind} {resource_name}. Nothing to delete.")
+        logger.info(f"No Compass ID for {resource_kind} {resource_name}. Nothing to delete in Compass.")
         return JSONResponse(
             content=FinalizeResponse(finalized=True).model_dump(by_alias=True),
             status_code=200
@@ -34,7 +34,7 @@ def finalize_resource(request_data: MetacontrollerRequest, resource_kind: str) -
     )
 
     if delete_result["success"]:
-        logger.info(f"{resource_kind} {compass_id} deleted successfully.")
+        logger.info(f"{resource_kind} {compass_id} deleted successfully from Compass.")
         return JSONResponse(
             content=FinalizeResponse(finalized=True).model_dump(by_alias=True),
             status_code=200
@@ -42,7 +42,7 @@ def finalize_resource(request_data: MetacontrollerRequest, resource_kind: str) -
 
     log_func = logger.warning if delete_result.get("transient") else logger.error
     error_type = "Transient" if delete_result.get("transient") else "Persistent"
-    log_func(f"{error_type} error finalizing {resource_kind} {resource_name}: {delete_result.get('message')}")
+    log_func(f"{error_type} error finalizing {resource_kind} {resource_name} in Compass: {delete_result.get('message')}")
 
     return JSONResponse(
         content=FinalizeResponse(finalized=False).model_dump(by_alias=True),

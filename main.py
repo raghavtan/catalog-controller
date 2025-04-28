@@ -10,13 +10,13 @@ from models import (
     ResourceKind
 )
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, stream=sys.stderr,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
-logger = logging.getLogger("basecontroller")
+logger = logging.getLogger("CatalogController")
 
-app = FastAPI()
+app = FastAPI(swagger_ui_parameters={"syntaxHighlight.theme": "obsidian"})
+
 
 @app.post("/sync/{resource_kind}")
 async def sync_generic(
@@ -36,3 +36,8 @@ async def finalize_generic(
                                            )):
     logger.info(f"Received finalize request for {resource_kind}: {request_data.parent.metadata.name}")
     return finalize_resource(request_data, resource_kind)
+
+
+@app.get("/healthz")
+async def health_check():
+    return {"status": "ok"}

@@ -1,0 +1,72 @@
+
+name: Deployment Pipeline
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'charts/**'
+      - '.github/**'
+      - 'docs/**'
+      - '*.md'
+
+permissions: write-all
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    uses:
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up python
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate Version
+        id: version
+        uses: motain/onefootball-actions/bump-release@master
+        with:
+          access_token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          tag_only: true
+
+      - id: build-release-candidate
+        uses: motain/onefootball-actions/docker-build-push@master
+        with:
+          push: True
+          tag: ${{ steps.version.outputs.new-version}}
+          latest: true
+
+      - id: security-checks
+        uses: motain/onefootball-actions/security@master
+        with:
+          token: ${{ github.token }}
+          path: "."
+          image-url: ${{ steps.build-release-candidate.outputs.image-url }}
+
+      - name: Delete Tag
+        if: failure()
+        run: |
+          git tag -d ${{ steps.version.outputs.new-version }}
+          git push origin :refs/tags/${{ steps.version.outputs.new-version }}
+          echo "Tag deleted"
+
+      - name: Create Release
+        if: success()
+        id: create-release
+        run:
+            echo "Creating release"
+            gh release create ${{ steps.version.outputs.new-version }} \ 
+                --title ${{ steps.version.outputs.new-version }} \
+                --notes "Release ${{ steps.version.outputs.new-version }}" \
+                --target main \
+                --generate-notes
+          
+            echo "Release created"

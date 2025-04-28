@@ -16,7 +16,7 @@ endif
 VENV := venv
 
 # Python commands
-PYTHON := $(VENV)/bin/python
+PYTHON := $(VENV)/bin/python3
 PIP := $(VENV)/bin/pip
 
 # Docker image name
@@ -60,6 +60,11 @@ activate:  ## Activate the virtual environment
 
 run:  ## Run the application in the virtual environment
 	@echo "$(BLUE)Running the application...$(RESET)"
+	fastapi run main.py --port $(PORT)
+
+run-dev:  ## Run the application in the local environment without OTEL
+	@echo "$(BLUE)Running the application...$(RESET)"
+	fastapi run main.py --port $(PORT)
 
 
 docker-build:  ## Build the Docker image

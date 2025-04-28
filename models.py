@@ -30,26 +30,26 @@ class ParentResource(BaseModel):
     spec: Dict[str, Any]
     status: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
-# Metacontroller Request Structure for Sync and Finalize hooks
+
 class MetacontrollerRequest(BaseModel):
-    controller: Dict[str, Any] # The CompositeController object itself
+    controller: Dict[str, Any]
     parent: ParentResource
-    children: Dict[str, Dict[str, Any]] = Field(default_factory=dict) # Child objects by Kind.apiVersion -> name/namespace/name
-    related: Dict[str, Dict[str, Any]] = Field(default_factory=dict) # Related objects by Kind.apiVersion -> name/namespace/name
-    finalizing: bool # True if this is a finalize hook call
+    children: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    related: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    finalizing: bool
 
-# Metacontroller Response Structure for Sync hook
+
 class SyncResponse(BaseModel):
-    status: Dict[str, Any] = Field(default_factory=dict) # Desired status for the parent
-    children: List[Dict[str, Any]] = Field(default_factory=list) # Desired list of child objects (flat list)
-    resyncAfterSeconds: Optional[float] = None # Optional one-time resync request
+    status: Dict[str, Any] = Field(default_factory=dict)
+    children: List[Dict[str, Any]] = Field(default_factory=list)
+    resyncAfterSeconds: Optional[float] = None
 
-# Metacontroller Response Structure for Finalize hook
+
 class FinalizeResponse(BaseModel):
-    status: Dict[str, Any] = Field(default_factory=dict) # Desired status for the parent
-    children: List[Dict[str, Any]] = Field(default_factory=list) # Desired list of child objects (flat list)
-    finalized: bool # Indicates if finalization is complete
-    resyncAfterSeconds: Optional[float] = None # Optional one-time resync request
+    status: Dict[str, Any] = Field(default_factory=dict)
+    children: List[Dict[str, Any]] = Field(default_factory=list)
+    finalized: bool
+    resyncAfterSeconds: Optional[float] = None
 
 class ResourceKind(str, Enum):
     COMPONENT = "components"

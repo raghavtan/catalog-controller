@@ -1,69 +1,43 @@
-replicaCount: 1
-
-image:
-  repository: catalog-controller
-  pullPolicy: Always
-  tag: latest
-
 nameOverride: ""
 fullnameOverride: ""
 
 serviceAccount:
   create: true
+  annotations: {}
   name: ""
 
-rbac:
-  create: true
+image:
+  repository: 706922411989.dkr.ecr.eu-west-1.amazonaws.com/catalog-controller
+  pullPolicy: Always
+  tag: latest
 
-resources:
-  requests:
-    cpu: 100m
-    memory: 128Mi
-  limits:
-    cpu: 200m
-    memory: 256Mi
+service:
+  type: ClusterIP
+  port: 80
+
+resources: {}
 
 autoscaling:
-  enabled: true
-  minReplicas: 3
-  maxReplicas: 5
-  targetCPUUtilizationPercentage: 80
-  targetMemoryUtilizationPercentage: 80
+  enabled: false
 
-controllers:
-  - resource: "components"
-    resyncPeriod: "5m"
-    service:  catalog-controller.catalog-controller.svc.cluster.local
-    sync:
-      path: "/sync/components"
-      timeout: "15m"
-    finalizer:
-      path: "/finalize/components"
-      timeout: "15m"
-  - resource: "scorecards"
-    resyncPeriod: "5m"
-    service: catalog-controller.catalog-controller.svc.cluster.local
-    sync:
-      path: "/sync/scorecards"
-      timeout: "15m"
-    finalizer:
-      path: "/finalize/scorecards"
-      timeout: "15m"
-  - resource: "metrics"
-    resyncPeriod: "5m"
-    service: catalog-controller.catalog-controller.svc.cluster.local
-    sync:
-      path: "/sync/metrics"
-      timeout: "15m"
-    finalizer:
-      path: "/finalize/metrics"
-      timeout: "15m"
-    children:
-      - apiVersion: batch/v1
-        resource: cronjobs
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 10
+    periodSeconds: 30
+  readiness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 10
 
-env:
-  - name: COMPASS_SERVICE
-    value: compass-service.compass-service.svc.cluster.local
-  - name: METRIC_EVALUATION_SERVICE
-    value: metric-evaluation-service.compass.svc.cluster.local
+controllers: []
+
+env: []
+
+affinity: {}
+
+topologySpreadConstraints: []
+
+tolerations: []
+
+nodeSelector: {}
