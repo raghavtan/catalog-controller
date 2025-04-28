@@ -4,7 +4,7 @@ name: Deployment Pipeline
 on:
   push:
     branches:
-      - master
+      - main
     paths-ignore:
       - 'charts/**'
       - '.github/**'

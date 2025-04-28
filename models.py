@@ -1,7 +1,9 @@
-from pydantic import BaseModel, Field
-from typing import Dict, List, Optional, Any
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Dict, List, Optional, Any
+
+from pydantic import BaseModel, Field
+
 
 class KubernetesMetadata(BaseModel):
     name: str
@@ -14,14 +16,15 @@ class KubernetesMetadata(BaseModel):
     annotations: Optional[Dict[str, str]] = Field(default_factory=dict)
     labels: Optional[Dict[str, str]] = Field(default_factory=dict)
     finalizers: Optional[List[str]] = Field(default_factory=list)
-    # Add other fields as needed
+
 
 class KubernetesCondition(BaseModel):
     type: str
-    status: str # "True", "False", "Unknown"
+    status: str
     lastTransitionTime: str
     reason: str
     message: str
+
 
 class ParentResource(BaseModel):
     apiVersion: str
@@ -50,6 +53,7 @@ class FinalizeResponse(BaseModel):
     children: List[Dict[str, Any]] = Field(default_factory=list)
     finalized: bool
     resyncAfterSeconds: Optional[float] = None
+
 
 class ResourceKind(str, Enum):
     COMPONENT = "components"
