@@ -38,6 +38,7 @@ def is_sync_successful(desired_status: Dict[str, Any]) -> bool:
     synced_condition = get_condition(desired_status["conditions"], "Synced")
     return synced_condition and synced_condition["status"] == "True"
 
+
 def call_compass_api(resource_kind: str, operation: str, spec: Dict[str, Any], status: Dict[str, Any], compass_id: Optional[str] = None) -> Dict[str, Any]:
     logger.info(f"Calling dummy Compass API: {resource_kind} {operation} id={compass_id}")
 

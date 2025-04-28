@@ -62,10 +62,5 @@ jobs:
         id: create-release
         run:
             echo "Creating release"
-            gh release create ${{ steps.version.outputs.new-version }} \ 
-                --title ${{ steps.version.outputs.new-version }} \
-                --notes "Release ${{ steps.version.outputs.new-version }}" \
-                --target main \
-                --generate-notes
-          
+            gh release create ${{ steps.version.outputs.new-version }} --title ${{ steps.version.outputs.new-version }} --generate-notes
             echo "Release created"
