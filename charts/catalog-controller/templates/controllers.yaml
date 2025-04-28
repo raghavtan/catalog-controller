@@ -15,20 +15,14 @@ spec:
       resource: {{ .resource }}
   {{- end }}
   {{- end }}
-  resyncPeriod: {{ .resyncPeriod }}
+  resyncPeriodSeconds: {{ .resyncPeriod }}
   hooks:
     sync:
       webhook:
-        service:
-          name: {{ .service }}
-          port: 80
-          path: {{ .sync.path }}
+        url: http://{{ .service }}{{ .sync.path }}
         timeout: {{ .sync.timeout }}
     finalize:
       webhook:
-        service:
-          name: {{ .service }}
-          port: 80
-          path: {{ .finalizer.path }}
+        url: http://{{ .service }}{{ .finalizer.path }}
         timeout: {{ .finalizer.timeout }}
 {{- end }}
