@@ -15,12 +15,6 @@ serviceAccount:
 rbac:
   create: true
 
-podAnnotations: {}
-
-podSecurityContext: {}
-
-securityContext: {}
-
 resources:
   requests:
     cpu: 100m
@@ -31,15 +25,45 @@ resources:
 
 autoscaling:
   enabled: true
-  minReplicas: 1
+  minReplicas: 3
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
 
-compass:
-  apiBaseUrl: "https://api.atlassian.com/compass"
-  credentials:
-    existingSecret: ""
-    create: true
-    cloudId: ""  # Will be base64 encoded by the template
-    apiToken: ""  # Will be base64 encoded by the template
+controllers:
+  - resource: "components"
+    resyncPeriod: "5m"
+    service:  catalog-controller.catalog-controller.svc.cluster.local
+    sync:
+      path: "/sync/components"
+      timeout: "15m"
+    finalizer:
+      path: "/finalize/components"
+      timeout: "15m"
+  - resource: "scorecards"
+    resyncPeriod: "5m"
+    service: catalog-controller.catalog-controller.svc.cluster.local
+    sync:
+      path: "/sync/scorecards"
+      timeout: "15m"
+    finalizer:
+      path: "/finalize/scorecards"
+      timeout: "15m"
+  - resource: "metrics"
+    resyncPeriod: "5m"
+    service: catalog-controller.catalog-controller.svc.cluster.local
+    sync:
+      path: "/sync/metrics"
+      timeout: "15m"
+    finalizer:
+      path: "/finalize/metrics"
+      timeout: "15m"
+    children:
+      - apiVersion: batch/v1
+        resource: cronjobs
+
+env:
+  - name: COMPASS_SERVICE
+    value: compass-service.compass-service.svc.cluster.local
+  - name: METRIC_EVALUATION_SERVICE
+    value: metric-evaluation-service.compass.svc.cluster.local

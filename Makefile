@@ -16,7 +16,7 @@ endif
 VENV := venv
 
 # Python commands
-PYTHON := $(VENV)/bin/python3
+PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 
 # Docker image name
@@ -60,14 +60,6 @@ activate:  ## Activate the virtual environment
 
 run:  ## Run the application in the virtual environment
 	@echo "$(BLUE)Running the application...$(RESET)"
-	OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true opentelemetry-instrument \
-		--traces_exporter otlp \
-		--service_name $(IMAGE_NAME) \
-	fastapi run main.py --port $(PORT)
-
-run-dev:  ## Run the application in the local environment without OTEL
-	@echo "$(BLUE)Running the application...$(RESET)"
-	fastapi run main.py --port $(PORT)
 
 
 docker-build:  ## Build the Docker image

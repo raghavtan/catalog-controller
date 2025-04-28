@@ -1,0 +1,34 @@
+{{- range .Values.controllers }}
+---
+apiVersion: metacontroller.k8s.io/v1alpha1
+kind: CompositeController
+metadata:
+  name: {{ .resource }}-controller
+spec:
+  parentResource:
+    apiVersion: catalog.onefootball.com/v1alpha1
+    resource: {{ .resource }}
+  {{- if .children }} # Only include children if defined
+  children:
+  {{- range .children }}
+    - apiVersion: {{ .apiVersion }}
+      resource: {{ .resource }}
+  {{- end }}
+  {{- end }}
+  resyncPeriod: {{ .resyncPeriod }}
+  hooks:
+    sync:
+      webhook:
+        service:
+          name: {{ .service }}
+          port: 80
+          path: {{ .sync.path }}
+        timeout: {{ .sync.timeout }}
+    finalize:
+      webhook:
+        service:
+          name: {{ .service }}
+          port: 80
+          path: {{ .finalizer.path }}
+        timeout: {{ .finalizer.timeout }}
+{{- end }}
