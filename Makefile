@@ -22,7 +22,7 @@ PIP := $(VENV)/bin/pip
 
 # Docker image name
 IMAGE_NAME := catalog-controller
-PORT := $(or $(PORT),8000)
+PORT := $(or $(PORT),7070)
 
 .PHONY: help virtualenv clean install activate run docker-build lint ci setup pre-commit
 
