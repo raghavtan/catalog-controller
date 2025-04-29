@@ -111,18 +111,18 @@ def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JS
 
     # Generate child resources based on resource type
     desired_children = []
-    if resource_kind.lower() == ResourceKind.METRIC:
-        existing_children = request_data.children.get("batch/v1", {}).get("CronJob", {})
-
-        # Check if we have an existing CronJob child for this resource
-        has_existing_cronjob = bool(existing_children)
-
-        # Only generate children if we need reconciliation or there are no existing children
-        if need_reconciliation or not has_existing_cronjob:
-            desired_children = generate_child_resources(resource_kind, parent, desired_status)
-            logger.info(f"Generated {len(desired_children)} child resources for {resource_kind}/{resource_name}")
-        else:
-            logger.info(f"Reusing existing child resources for {resource_kind}/{resource_name}")
+    # if resource_kind.lower() == ResourceKind.METRIC:
+    #     existing_children = request_data.children.get("batch/v1", {}).get("CronJob", {})
+    #
+    #     # Check if we have an existing CronJob child for this resource
+    #     has_existing_cronjob = bool(existing_children)
+    #
+    #     # Only generate children if we need reconciliation or there are no existing children
+    #     if need_reconciliation or not has_existing_cronjob:
+    #         desired_children = generate_child_resources(resource_kind, parent, desired_status)
+    #         logger.info(f"Generated {len(desired_children)} child resources for {resource_kind}/{resource_name}")
+    #     else:
+    #         logger.info(f"Reusing existing child resources for {resource_kind}/{resource_name}")
 
     # Set a longer resync period if no reconciliation was needed
     resync_seconds = 600

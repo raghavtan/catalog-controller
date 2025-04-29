@@ -6,11 +6,6 @@ spec:
   parentResource:
     apiVersion: catalog.onefootball.com/v1alpha1
     resource: metrics
-  childResources:
-    - apiVersion: batch/v1
-      resource: cronjobs
-      updateStrategy:
-        method: InPlace
   resyncPeriodSeconds: 600
   generateSelector: true
   hooks:
