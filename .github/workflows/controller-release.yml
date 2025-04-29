@@ -57,10 +57,10 @@ jobs:
           git push origin :refs/tags/${{ steps.version.outputs.new-version }}
           echo "Tag deleted"
 
-      - name: Create Release
-        if: success()
-        id: create-release
-        run:
-            echo "Creating release"
-            gh release create ${{ steps.version.outputs.new-version }} --title ${{ steps.version.outputs.new-version }} --generate-notes
-            echo "Release created"
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.version.outputs.new-version }}
+          tag_name: ${{ steps.version.outputs.new-version }}
+          generate_release_notes: true
+          make_latest: true
