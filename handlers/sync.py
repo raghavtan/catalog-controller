@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 from fastapi.responses import JSONResponse
 
+
 from handlers.compass import fetch_compass_state, create_compass_resource, update_compass_resource
 from models import MetacontrollerRequest, SyncResponse, ResourceKind
 from utils import set_condition, is_sync_successful, get_condition
@@ -35,11 +36,11 @@ def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JS
             not compass_id
     )
 
-    set_condition(desired_status["conditions"], "Synced", "Unknown", "Reconciling",
-                  f"Starting synchronization for {resource_kind}.")
-
     if need_reconciliation:
         logger.info(f"Full reconciliation needed for {resource_kind}/{resource_name}")
+
+        set_condition(desired_status["conditions"], "Synced", "Unknown", "Reconciling",
+                      f"Starting synchronization for {resource_kind}.")
 
         if not compass_id:
             logger.info(f"No Compass ID found for {resource_kind}/{resource_name}. Creating new resource.")
@@ -92,10 +93,9 @@ def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JS
     synced_condition = get_condition(desired_status.get("conditions", []), "Synced")
 
     # Check if both Ready and Synced conditions are present and True
-    if (ready_condition and ready_condition.get("status") == "True" and
-        synced_condition and synced_condition.get("status") == "True"):
+    if (ready_condition is not None and ready_condition.get("status") == "True" and
+        synced_condition is not None and synced_condition.get("status") == "True"):
         resync_seconds = 3600
-
     return JSONResponse(
         content=SyncResponse(
             status=desired_status,
