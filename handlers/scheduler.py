@@ -12,6 +12,12 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
     metric_name = parent_resource["metadata"]["name"]
     resource_spec = parent_resource.get("spec", {})
     cron_schedule = resource_spec.get("cronSchedule")
+    labels = parent_resource["metadata"].get("labels", {})
+    default_labels = {
+        "app.kubernetes.io/created-by": "catalog-controller",
+        "metric.catalog.onefootball.com/name": metric_name
+    }
+    labels.update(default_labels)
 
     if not cron_schedule:
         logger.info(f"Metric '{metric_name}' has no cronSchedule. No CronJob will be built.")
@@ -27,10 +33,7 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
         "metadata": {
             "name": cronjob_name,
             "namespace": "catalog-controller",
-            "labels": {
-                "app.kubernetes.io/created-by": "catalog-controller",
-                "metric.catalog.onefootball.com/name": metric_name
-            },
+            "labels": labels,
         },
         "spec": {
             "schedule": cron_schedule,

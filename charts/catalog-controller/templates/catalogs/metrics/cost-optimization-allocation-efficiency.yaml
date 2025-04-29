@@ -2,6 +2,8 @@ apiVersion: catalog.onefootball.com/v1alpha1
 kind: Metric
 metadata:
   name: allocation-efficiency
+  labels:
+    {{- include "catalog-controller.labels" . | nindent 4 }}
 spec:
   description: https://github.com/motain/of-catalog/blob/main/docs/grading-system/cost-optimization.md#cost-optimization-grading-system
   format:
