@@ -39,23 +39,117 @@ def is_sync_successful(desired_status: Dict[str, Any]) -> bool:
     return synced_condition and synced_condition["status"] == "True"
 
 
-def call_compass_api(resource_kind: str, operation: str, spec: Dict[str, Any], status: Dict[str, Any], compass_id: Optional[str] = None) -> Dict[str, Any]:
+def call_compass_api(resource_kind: str, operation: str, spec: Dict[str, Any], status: Dict[str, Any],
+                     compass_id: Optional[str] = None) -> Dict[str, Any]:
     logger.info(f"Calling dummy Compass API: {resource_kind} {operation} id={compass_id}")
 
-    # Call compass-service API here
-    # This will be implemented later
-
-    # Placeholder return for now
-    if operation == "create":
-        # Simulate a successful creation
-        return {"success": True, "id": f"dummy-{resource_kind}-{spec['metadata']['name']}-123"}
-    elif operation == "get":
-        # Simulate a successful get where the resource exists
-        # You might want to return a dummy state here if needed by fetch_compass_state
-        return {"success": True, "exists": True, "state": { "id": f"dummy-{resource_kind}-{spec['metadata']['name']}-123" }}
-    elif operation == "delete":
-        # Simulate a successful deletion
-        return {"success": True}
+    # Get resource name based on the type
+    if resource_kind.lower() == "component":
+        resource_name = spec.get("name", "unknown")
+    elif resource_kind.lower() == "metric":
+        resource_name = spec.get("name", "unknown")
+    elif resource_kind.lower() == "scorecard":
+        resource_name = spec.get("name", "unknown")
     else:
-        # Default return for other operations or unknown cases
+        resource_name = "unknown"
+
+    if operation == "create":
+        dummy_id = f"dummy-{resource_kind.lower()}-{resource_name}-123"
+        response = {"success": True, "id": dummy_id}
+
+        # For components, add metricSources with dummy IDs
+        if resource_kind.lower() == "component":
+            metric_sources = {}
+            # Generate dummy metric sources - in a real implementation, this would come from Compass
+            metrics = ["security-as-pipeline", "vulnerability-management", "high-availability"]
+            for metric_name in metrics:
+                metric_sources[metric_name] = {
+                    "id": f"ms-{dummy_id}-{metric_name}",
+                    "name": metric_name,
+                    "metric": f"dummy-metric-{metric_name}-123",
+                    "facts": []  # Add facts structure if needed
+                }
+            response["metricSources"] = metric_sources
+
+        return response
+
+    elif operation == "get":
+        dummy_id = compass_id or f"dummy-{resource_kind.lower()}-{resource_name}-123"
+        state = {
+            "id": dummy_id,
+            "name": resource_name
+        }
+
+        # Add resource-specific dummy state
+        if resource_kind.lower() == "metric":
+            state.update({
+                "description": spec.get("description", ""),
+                "format": spec.get("format", {}),
+                "grading-system": spec.get("grading-system", ""),
+                "facts": spec.get("facts", [])
+            })
+        elif resource_kind.lower() == "scorecard":
+            criteria_state = {}
+            # Generate dummy criteria state with metricDefinitionIds
+            for criterion in spec.get("criteria", []):
+                metric_value = criterion.get("hasMetricValue", {})
+                metric_name = metric_value.get("metricName", "unknown")
+                criteria_state[metric_name] = {
+                    "metricDefinitionId": f"dummy-metric-{metric_name}-123"
+                }
+            state["criteria"] = criteria_state
+
+            # Generate metrics summary for scorecard
+            metric_names = [c.get("hasMetricValue", {}).get("metricName", "unknown")
+                            for c in spec.get("criteria", [])]
+            state["metricsSummary"] = ", ".join(metric_names)
+
+        elif resource_kind.lower() == "component":
+            metric_sources = {}
+            # Generate dummy metric sources - match the structure in CRD
+            metrics = ["security-as-pipeline", "vulnerability-management", "high-availability"]
+            for metric_name in metrics:
+                metric_sources[metric_name] = {
+                    "id": f"ms-{dummy_id}-{metric_name}",
+                    "name": metric_name,
+                    "metric": f"dummy-metric-{metric_name}-123",
+                    "facts": []  # Add dummy facts
+                }
+            state["metricSources"] = metric_sources
+
+        return {"success": True, "exists": True, "state": state}
+
+    elif operation == "update":
+        response = {"success": True}
+
+        # For components, add metricSources with dummy IDs
+        if resource_kind.lower() == "component":
+            metric_sources = {}
+            metrics = ["security-as-pipeline", "vulnerability-management", "high-availability"]
+            for metric_name in metrics:
+                metric_sources[metric_name] = {
+                    "id": f"ms-{compass_id}-{metric_name}",
+                    "name": metric_name,
+                    "metric": f"dummy-metric-{metric_name}-123",
+                    "facts": []  # Add dummy facts
+                }
+            response["metricSources"] = metric_sources
+
+        # For scorecards, include criteria with metricDefinitionIds
+        elif resource_kind.lower() == "scorecard":
+            criteria_state = {}
+            for criterion in spec.get("criteria", []):
+                metric_value = criterion.get("hasMetricValue", {})
+                metric_name = metric_value.get("metricName", "unknown")
+                criteria_state[metric_name] = {
+                    "metricDefinitionId": f"dummy-metric-{metric_name}-123"
+                }
+            response["criteria"] = criteria_state
+
+        return response
+
+    elif operation == "delete":
+        return {"success": True}
+
+    else:
         return {"success": False, "message": "Unknown operation or not implemented"}

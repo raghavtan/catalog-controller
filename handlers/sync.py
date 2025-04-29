@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 from handlers.children import generate_child_resources
 from handlers.compass import fetch_compass_state, create_compass_resource, update_compass_resource
-from models import MetacontrollerRequest, SyncResponse
+from models import MetacontrollerRequest, SyncResponse, ResourceKind
 from utils import set_condition, is_sync_successful
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr,
@@ -34,14 +34,14 @@ def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JS
             f"Compass ID present in status: {bool(compass_id_in_status)}")
 
         compass_id = desired_status.get("id")
-        compass_state, desired_status = fetch_compass_state(compass_id, resource_kind, parent['spec'],
-                                                            current_status, desired_status)
+        compass_state, desired_status = fetch_compass_state(compass_id, resource_kind, parent,
+                                                          current_status, desired_status)
 
         if not compass_id or not compass_state:
             desired_status = create_compass_resource(resource_kind, parent, current_status, desired_status)
         elif compass_state:
             desired_status = update_compass_resource(resource_kind, parent, compass_id,
-                                                     compass_state, current_status, desired_status)
+                                                   compass_state, current_status, desired_status)
 
         if is_sync_successful(desired_status):
             desired_status["observedGeneration"] = current_generation
@@ -55,10 +55,13 @@ def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JS
             set_condition(desired_status["conditions"], "Synced", "True", "SyncSuccess",
                           f"{resource_kind} in sync with Compass.")
 
-    desired_children = generate_child_resources(resource_kind, parent, desired_status)
+    # Generate child resources based on resource type
+    desired_children = []
+    if resource_kind.lower() == ResourceKind.METRIC:
+        desired_children = generate_child_resources(resource_kind, parent, desired_status)
 
     if desired_status != current_status:
-        logger.info(f"Returning Updated status {resource_kind}/{parent['metadata']['name']}.")
+        logger.info(f"Returning Updated status for {resource_kind}/{parent['metadata']['name']}.")
         return JSONResponse(
             content=SyncResponse(status=desired_status, children=desired_children).model_dump(by_alias=True),
             status_code=200

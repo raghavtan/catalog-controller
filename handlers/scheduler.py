@@ -26,6 +26,7 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
     logger.info(f"Building desired CronJob for metric '{metric_name}' with schedule '{cron_schedule}'.")
     cronjob_name = f"{metric_name}-evaluator"
     metric_spec_json = json.dumps(resource_spec)
+    curl_command = f"curl -X POST {METRIC_EVALUATION_SERVICE_URL} -H 'Content-Type: application/json' -d '{metric_spec_json}'"
 
     desired_cronjob = {
         "apiVersion": "batch/v1",
@@ -46,10 +47,7 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
                                 {
                                     "name": "compute-caller",
                                     "image": "alpine/curl",
-                                    "command": ["/bin/sh", "-c",
-                                                f"curl -X POST {METRIC_EVALUATION_SERVICE_URL} "
-                                                f"-H 'Content-Type: application/json' "
-                                                f"-d '{metric_spec_json}'"]
+                                    "command": ["/bin/sh", "-c", curl_command]
                                 }
                             ],
                         }
