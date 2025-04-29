@@ -38,6 +38,9 @@ def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JS
 
     desired_children = generate_child_resources(resource_kind, parent, desired_status)
 
+    logger.info(f"Desired children: {desired_children}")
+    logger.info(f"Desired status: {desired_status}")
+
     if is_sync_successful(desired_status):
         desired_status["lastEvaluatedTime"] = datetime.now(timezone.utc).isoformat()
 

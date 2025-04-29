@@ -18,6 +18,8 @@ logger = logging.getLogger("CatalogController")
 
 app = FastAPI(swagger_ui_parameters={"syntaxHighlight.theme": "obsidian"})
 
+logger.info(":::::::::::::::::::::::::Starting Catalog Controller::::::::::::::::::::::::::::::::")
+
 
 @app.post("/sync/{resource_kind}")
 async def sync_generic(
@@ -26,6 +28,7 @@ async def sync_generic(
                                            description="Resource kind to sync (e.g., 'components', 'scorecards', 'metrics')"
                                            )):
     logger.info(f"Received sync request for {resource_kind}: {request_data.parent.metadata.name}")
+    logger.debug(f"Request data: {request_data}")
     return sync_resource(request_data, resource_kind)
 
 

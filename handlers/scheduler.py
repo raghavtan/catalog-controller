@@ -9,7 +9,7 @@ METRIC_EVALUATION_SERVICE_URL = os.getenv("METRIC_EVALUATION_SERVICE_URL", "metr
 
 def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     metric_name = parent_resource["metadata"]["name"]
-    namespace = parent_resource["metadata"].get("namespace", "default")
+    namespace = parent_resource["metadata"].get("namespace", "catalog-controller")
     resource_spec = parent_resource.get("spec", {})
     cron_schedule = resource_spec.get("cronSchedule")
 
