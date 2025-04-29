@@ -54,18 +54,18 @@ controllers:
     finalizer:
       path: "/finalize/scorecard"
       timeout: *timeoutSeconds
-  - resource: "metrics"
-    resyncPeriod: *resyncPeriodSeconds
-    service: catalog-controller.catalog-controller.svc.cluster.local
-    sync:
-      path: "/sync/metric"
-      timeout: *timeoutSeconds
-    finalizer:
-      path: "/finalize/metric"
-      timeout: *timeoutSeconds
-    children:
-      - apiVersion: batch/v1
-        resource: cronjobs
+#  - resource: "metrics"
+#    resyncPeriod: *resyncPeriodSeconds
+#    service: catalog-controller.catalog-controller.svc.cluster.local
+#    sync:
+#      path: "/sync/metric"
+#      timeout: *timeoutSeconds
+#    finalizer:
+#      path: "/finalize/metric"
+#      timeout: *timeoutSeconds
+#    children:
+#      - apiVersion: batch/v1
+#        resource: cronjobs
 
 env: []
 
