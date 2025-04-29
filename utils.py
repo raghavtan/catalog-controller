@@ -48,11 +48,11 @@ def call_compass_api(resource_kind: str, operation: str, spec: Dict[str, Any], s
     # Placeholder return for now
     if operation == "create":
         # Simulate a successful creation
-        return {"success": True, "id": f"dummy-{resource_kind}-compass-id-123"}
+        return {"success": True, "id": f"dummy-{resource_kind}-{spec['metadata']['name']}-123"}
     elif operation == "get":
         # Simulate a successful get where the resource exists
         # You might want to return a dummy state here if needed by fetch_compass_state
-        return {"success": True, "exists": True, "state": {}}
+        return {"success": True, "exists": True, "state": { "id": f"dummy-{resource_kind}-{spec['metadata']['name']}-123" }}
     elif operation == "delete":
         # Simulate a successful deletion
         return {"success": True}

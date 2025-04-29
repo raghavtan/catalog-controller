@@ -16,7 +16,6 @@ logger = logging.getLogger("SyncHandler")
 
 def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JSONResponse:
     parent = request_data.parent.model_dump(by_alias=True)
-    resource_spec = parent["spec"]
     current_status = parent.get("status", {})
     desired_status = current_status.copy()
 
@@ -35,13 +34,13 @@ def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JS
             f"Compass ID present in status: {bool(compass_id_in_status)}")
 
         compass_id = desired_status.get("id")
-        compass_state, desired_status = fetch_compass_state(compass_id, resource_kind, resource_spec,
+        compass_state, desired_status = fetch_compass_state(compass_id, resource_kind, parent['spec'],
                                                             current_status, desired_status)
 
         if not compass_id or not compass_state:
-            desired_status = create_compass_resource(resource_kind, resource_spec, current_status, desired_status)
+            desired_status = create_compass_resource(resource_kind, parent, current_status, desired_status)
         elif compass_state:
-            desired_status = update_compass_resource(resource_kind, resource_spec, compass_id,
+            desired_status = update_compass_resource(resource_kind, parent, compass_id,
                                                      compass_state, current_status, desired_status)
 
         if is_sync_successful(desired_status):
