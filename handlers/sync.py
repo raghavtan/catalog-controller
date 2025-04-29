@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from handlers.compass import fetch_compass_state, create_compass_resource, update_compass_resource
 from models import MetacontrollerRequest, SyncResponse, ResourceKind
 from utils import set_condition, is_sync_successful, get_condition
+from handlers.children import generate_child_resources
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr,
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -79,20 +80,19 @@ def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JS
                       f"{resource_kind} is already in sync with Compass.")
 
     desired_children = []
-    # if resource_kind.lower() == ResourceKind.METRIC:
-    #     existing_children = request_data.children.get("batch/v1", {}).get("CronJob", {})
-    #     has_existing_cronjob = bool(existing_children)
-    #     if need_reconciliation or not has_existing_cronjob:
-    #         desired_children = generate_child_resources(resource_kind, parent, desired_status)
-    #         logger.info(f"Generated {len(desired_children)} child resources for {resource_kind}/{resource_name}")
-    #     else:
-    #         logger.info(f"Reusing existing child resources for {resource_kind}/{resource_name}")
+    if resource_kind.lower() == ResourceKind.METRIC:
+        existing_children = request_data.children.get("batch/v1", {}).get("CronJob", {})
+        has_existing_cronjob = bool(existing_children)
+        if need_reconciliation or not has_existing_cronjob:
+            desired_children = generate_child_resources(resource_kind, parent, desired_status)
+            logger.info(f"Generated {len(desired_children)} child resources for {resource_kind}/{resource_name}")
+        else:
+            logger.info(f"Reusing existing child resources for {resource_kind}/{resource_name}")
 
     resync_seconds = 600
     ready_condition = get_condition(desired_status.get("conditions", []), "Ready")
     synced_condition = get_condition(desired_status.get("conditions", []), "Synced")
 
-    # Check if both Ready and Synced conditions are present and True
     if (ready_condition is not None and ready_condition.get("status") == "True" and
         synced_condition is not None and synced_condition.get("status") == "True"):
         resync_seconds = 3600
