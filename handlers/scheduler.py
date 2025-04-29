@@ -13,6 +13,7 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
     """
     Build a CronJob resource for metric evaluation with consistent hashing.
     Uses a minimal set of fields to ensure stable CronJob specifications.
+    IMPORTANT: Does NOT include any changing annotations that would cause reconciliation loops.
     """
     metric_name = parent_resource["metadata"]["name"]
     resource_spec = parent_resource.get("spec", {})
@@ -35,15 +36,17 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
         "spec-hash": spec_hash[:8]
     }
 
+    # Add original labels from the parent resource if they exist
     if "metadata" in parent_resource and "labels" in parent_resource["metadata"]:
         for key, value in parent_resource["metadata"]["labels"].items():
             if key not in labels:
                 labels[key] = value
 
+    # IMPORTANT: Don't include any annotations that change with each request
+    # Only include stable annotations that won't change between reconciliations
     annotations = {
         "metric.catalog.onefootball.com/name": metric_name,
-        "metric.catalog.onefootball.com/spec-hash": spec_hash,
-        "metric.catalog.onefootball.com/last-updated": parent_resource["metadata"].get("resourceVersion", "0")
+        "metric.catalog.onefootball.com/spec-hash": spec_hash
     }
 
     logger.info(f"Building CronJob for metric '{metric_name}' with hash '{spec_hash[:8]}'")
