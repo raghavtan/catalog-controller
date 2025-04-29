@@ -5,11 +5,17 @@ import logging
 logger = logging.getLogger("Utils")
 
 def get_condition(conditions: List[Dict[str, Any]], condition_type: str) -> Optional[Dict[str, Any]]:
-    return next((c for c in conditions if c and c.get("type") == condition_type), None)
+    if not conditions:
+        return None
+    for condition in conditions:
+        if condition and condition.get("type") == condition_type:
+            return condition
+    return None
 
 def set_condition(conditions: List[Dict[str, Any]], condition_type: str, status: str, reason: str, message: str):
     now = datetime.now(timezone.utc).isoformat()
     condition = get_condition(conditions, condition_type)
+
     if not condition:
         conditions.append({
             "type": condition_type,
@@ -19,24 +25,43 @@ def set_condition(conditions: List[Dict[str, Any]], condition_type: str, status:
             "message": message
         })
     else:
-        condition["lastTransitionTime"] = now if condition.get("status") != status else condition["lastTransitionTime"]
-        condition.update({ "status": status,"reason": reason, "message": message })
+        old_status = condition.get("status")
+        old_reason = condition.get("reason")
+        old_message = condition.get("message")
+
+        state_changed = (
+            old_status != status or
+            old_reason != reason or
+            old_message != message
+        )
+
+        if state_changed:
+            condition["status"] = status
+            condition["reason"] = reason
+            condition["message"] = message
+
+            if old_status != status:
+                condition["lastTransitionTime"] = now
+
 
 def handle_transient_error(desired_status: Dict[str, Any], message: str) -> None:
     logger.warning(message)
-    set_condition(desired_status["conditions"], "Synced", "Unknown", "TransientError", f"Transient error: {message}")
-    set_condition(desired_status["conditions"], "Ready", "Unknown", "TransientError", f"Transient error: {message}")
+    conditions = desired_status.setdefault("conditions", [])
+    set_condition(conditions, "Synced", "Unknown", "TransientError", f"Transient error: {message}")
+    set_condition(conditions, "Ready", "Unknown", "TransientError", f"Transient error: {message}")
 
 
 def handle_persistent_error(desired_status: Dict[str, Any], message: str) -> None:
     logger.error(message)
-    set_condition(desired_status["conditions"], "Ready", "False", "ReconciliationFailed", message)
-    set_condition(desired_status["conditions"], "Synced", "False", "SyncFailed", message)
+    conditions = desired_status.setdefault("conditions", [])
+    set_condition(conditions, "Ready", "False", "ReconciliationFailed", message)
+    set_condition(conditions, "Synced", "False", "SyncFailed", message)
 
 
 def is_sync_successful(desired_status: Dict[str, Any]) -> bool:
-    synced_condition = get_condition(desired_status["conditions"], "Synced")
-    return synced_condition and synced_condition["status"] == "True"
+    conditions = desired_status.get("conditions", [])
+    synced_condition = get_condition(conditions, "Synced")
+    return synced_condition is not None and synced_condition.get("status") == "True"
 
 
 def call_compass_api(resource_kind: str, operation: str, spec: Dict[str, Any], status: Dict[str, Any],
@@ -76,7 +101,7 @@ def call_compass_api(resource_kind: str, operation: str, spec: Dict[str, Any], s
             # Dynamically determine metrics based on what's in status or create dummy ones
             metric_names = []
             if status and "metricSources" in status:
-                # Use existing metric names from status
+                # Reuse existing metric names from status
                 metric_names = list(status["metricSources"].keys())
 
             # If we don't have metrics from status, generate some based on component type
@@ -155,7 +180,7 @@ def call_compass_api(resource_kind: str, operation: str, spec: Dict[str, Any], s
             # Generate metrics summary
             metric_names = [c.get("hasMetricValue", {}).get("metricName", "unknown")
                             for c in spec.get("criteria", []) if "hasMetricValue" in c]
-            state["metricsSummary"] = ", ".join(metric_names)
+            state["metricsSummary"] = ", \n".join(metric_names)
             state["componentTypeIds"] = spec.get("componentTypeIds", [])
             state["importance"] = spec.get("importance", "REQUIRED")
             state["state"] = spec.get("state", "PUBLISHED")
