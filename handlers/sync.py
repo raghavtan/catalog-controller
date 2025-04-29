@@ -35,6 +35,10 @@ def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JS
     observed_generation = current_status.get("observedGeneration", 0)
     compass_id = current_status.get("id")
 
+    # Track the resource version to detect unnecessary updates
+    current_resource_version = parent["metadata"].get("resourceVersion")
+    last_resource_version = current_status.get("lastResourceVersion")
+
     logger.info(
         f"Processing {resource_kind}/{parent['metadata']['name']} - "
         f"Generation: {current_generation}, Observed: {observed_generation}, Compass ID: {compass_id}"
@@ -75,7 +79,22 @@ def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JS
         if is_sync_successful(desired_status):
             desired_status["observedGeneration"] = current_generation
             desired_status["lastEvaluatedTime"] = datetime.now(timezone.utc).isoformat()
+            # Store the current resource version to track changes
+            desired_status["lastResourceVersion"] = current_resource_version
     else:
+        # Check if this is a redundant update by comparing resource versions
+        if current_resource_version == last_resource_version and compass_id:
+            logger.info(
+                f"Redundant sync for {resource_kind}/{parent['metadata']['name']} - "
+                f"Resource version unchanged: {current_resource_version}"
+            )
+            # Just return the current status without any changes to avoid triggering another update
+            return JSONResponse(
+                content=SyncResponse(status=current_status, children=[], resyncAfterSeconds=600).model_dump(
+                    by_alias=True),
+                status_code=200
+            )
+
         logger.info(
             f"Skipping reconciliation for {resource_kind}/{parent['metadata']['name']} - "
             f"Spec has not changed (generation {current_generation})"
@@ -87,6 +106,9 @@ def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JS
         set_condition(desired_status["conditions"], "Ready", "True", "AlreadyInSync",
                       f"{resource_kind} is already in sync with Compass.")
 
+        # Update the resource version
+        desired_status["lastResourceVersion"] = current_resource_version
+
     # Generate child resources based on resource type
     desired_children = []
     if resource_kind.lower() == ResourceKind.METRIC:
@@ -95,6 +117,7 @@ def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JS
     # CRITICAL: Always return a full status object to ensure all fields are preserved
     # Even if nothing changed, returning a full status ensures we don't lose any fields
     return JSONResponse(
-        content=SyncResponse(status=desired_status, children=desired_children, resyncAfterSeconds=300).model_dump(by_alias=True),
+        content=SyncResponse(status=desired_status, children=desired_children, resyncAfterSeconds=600).model_dump(
+            by_alias=True),
         status_code=200
     )

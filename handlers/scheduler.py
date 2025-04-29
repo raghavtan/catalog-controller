@@ -22,12 +22,20 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
 
     logger.debug(f"Building desired CronJob for metric '{metric_name}' with schedule '{cron_schedule}'.")
     cronjob_name = f"{metric_name}-evaluator"
-    metric_spec_json = json.dumps(resource_spec)
-    curl_command = f"curl -X POST {METRIC_EVALUATION_SERVICE_URL} -H 'Content-Type: application/json' -d '{metric_spec_json}'"
+
+    # Create a simplified spec JSON with fewer fields to reduce the chance of differences
+    simplified_spec = {
+        "name": resource_spec.get("name"),
+        "description": resource_spec.get("description", ""),
+        "grading-system": resource_spec.get("grading-system", ""),
+        "componentType": resource_spec.get("componentType", [])
+    }
+
+    metric_spec_json = json.dumps(simplified_spec)
+    curl_command = f"curl -X POST {METRIC_EVALUATION_SERVICE_URL}/evaluate/{metric_name} -H 'Content-Type: application/json'"
 
     annotations = {
-        "metric.catalog.onefootball.com/description": resource_spec.get("description", ""),
-        "metric.catalog.onefootball.com/component-type": ",".join(resource_spec.get("componentType", [])),
+        "metric.catalog.onefootball.com/name": metric_name,
         "metric.catalog.onefootball.com/spec-hash": spec_hash
     }
 
@@ -46,12 +54,16 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
             "name": cronjob_name,
             "namespace": "catalog-controller",
             "labels": labels,
+            "annotations": annotations
         },
         "spec": {
             "schedule": cron_schedule,
             "jobTemplate": {
                 "spec": {
                     "template": {
+                        "metadata": {
+                            "labels": labels
+                        },
                         "spec": {
                             "restartPolicy": "OnFailure",
                             "containers": [
