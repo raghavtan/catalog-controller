@@ -13,6 +13,8 @@ spec:
   {{- range .children }}
     - apiVersion: {{ .apiVersion }}
       resource: {{ .resource }}
+      updateStrategy:
+        method: InPlace
   {{- end }}
   {{- end }}
   resyncPeriodSeconds: {{ .resyncPeriod }}
