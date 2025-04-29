@@ -8,7 +8,7 @@ logger = logging.getLogger("CompassSubHandler")
 
 def fetch_compass_state(compass_id: Optional[str], resource_kind: str, k8s_spec: Dict[str, Any],
                         current_status: Dict[str, Any], desired_status: Dict[str, Any]) -> Tuple[Optional[Dict], Dict]:
-    resource_spec = k8s_spec.get("spec", {})
+    logger.info(f"Fetching state for {resource_kind} with ID: {compass_id} and name {k8s_spec['metadata']['name']}")
     if not compass_id:
         logger.info(f"No Compass ID found for {resource_kind}. Resource doesn't exist.")
         set_condition(desired_status["conditions"], "Synced", "False", "NotCreated",
@@ -16,7 +16,7 @@ def fetch_compass_state(compass_id: Optional[str], resource_kind: str, k8s_spec:
         return None, desired_status
 
     logger.info(f"Fetching state for {resource_kind} with ID: {compass_id}")
-    get_result = call_compass_api(resource_kind, "get", resource_spec, status=current_status, compass_id=compass_id)
+    get_result = call_compass_api(resource_kind, "get", k8s_spec, status=current_status, compass_id=compass_id)
 
     if get_result["success"]:
         if get_result.get("exists"):
@@ -44,9 +44,8 @@ def fetch_compass_state(compass_id: Optional[str], resource_kind: str, k8s_spec:
 
 def create_compass_resource(resource_kind: str, k8s_spec: Dict[str, Any],
                             current_status: Dict[str, Any], desired_status: Dict[str, Any]) -> Dict[str, Any]:
-    resource_spec = k8s_spec.get("spec", {})
     logger.info(f"Creating {resource_kind} in Compass for {k8s_spec['metadata']['name']}")
-    api_result = call_compass_api(resource_kind, "create", resource_spec, status=current_status)
+    api_result = call_compass_api(resource_kind, "create", k8s_spec, status=current_status)
 
     if api_result["success"]:
         desired_status["id"] = api_result["id"]
@@ -73,7 +72,7 @@ def update_compass_resource(resource_kind: str, k8s_spec: Dict[str, Any], compas
         return handle_no_update_needed(resource_kind, compass_id, compass_state, resource_spec, desired_status)
 
     logger.info(f"Updating {resource_kind} with ID {compass_id} in Compass for {k8s_spec['metadata']['name']}")
-    api_result = call_compass_api(resource_kind, "update", resource_spec, status=current_status, compass_id=compass_id)
+    api_result = call_compass_api(resource_kind, "update", k8s_spec, status=current_status, compass_id=compass_id)
 
     if api_result["success"]:
         if resource_kind == ResourceKind.COMPONENT and "metricSources" in api_result:
