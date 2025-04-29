@@ -7,9 +7,9 @@ logger = logging.getLogger("CronJobSubHandler")
 
 METRIC_EVALUATION_SERVICE_URL = os.getenv("METRIC_EVALUATION_SERVICE_URL", "metric-evaluation-service")
 
+
 def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     metric_name = parent_resource["metadata"]["name"]
-    namespace = parent_resource["metadata"].get("namespace", "catalog-controller")
     resource_spec = parent_resource.get("spec", {})
     cron_schedule = resource_spec.get("cronSchedule")
 
@@ -26,7 +26,7 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
         "kind": "CronJob",
         "metadata": {
             "name": cronjob_name,
-            "namespace": namespace,
+            "namespace": "catalog-controller",
             "labels": {
                 "app.kubernetes.io/created-by": "catalog-controller",
                 "metric.catalog.onefootball.com/name": metric_name
