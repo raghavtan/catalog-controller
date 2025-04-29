@@ -42,6 +42,8 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
                     "template": {
                         "spec": {
                             "restartPolicy": "OnFailure",
+                            "successfulJobsHistoryLimit": 5,
+                            "failedJobsHistoryLimit": 5,
                             "containers": [
                                 {
                                     "name": "compute-caller",

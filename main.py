@@ -18,8 +18,6 @@ logger = logging.getLogger("CatalogController")
 
 app = FastAPI(swagger_ui_parameters={"syntaxHighlight.theme": "obsidian"})
 
-logger.info(":::::::::::::::::::::::::Starting Catalog Controller::::::::::::::::::::::::::::::::")
-
 
 @app.post("/sync/{resource_kind}")
 async def sync_generic(
