@@ -179,6 +179,11 @@ spec:
                     Used to track whether the spec has changed since the last reconciliation.
                   type: integer
                   format: int64
+                lastResourceVersion:
+                  description: >-
+                    The resource version that was last processed.
+                    Used to avoid unnecessary reconciliations.
+                  type: string
             apiVersion:
               type: string
             kind:

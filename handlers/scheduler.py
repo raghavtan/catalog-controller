@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import hashlib
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger("CronJobSubHandler")
@@ -9,6 +10,10 @@ METRIC_EVALUATION_SERVICE_URL = os.getenv("METRIC_EVALUATION_SERVICE_URL", "metr
 
 
 def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Build a CronJob resource for metric evaluation with consistent hashing.
+    Uses a minimal set of fields to ensure stable CronJob specifications.
+    """
     metric_name = parent_resource["metadata"]["name"]
     resource_spec = parent_resource.get("spec", {})
     cron_schedule = resource_spec.get("cronSchedule")
@@ -17,35 +22,31 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
         logger.info(f"Metric '{metric_name}' has no cronSchedule. No CronJob will be built.")
         return None
 
-    import hashlib
     spec_hash = hashlib.md5(json.dumps(resource_spec, sort_keys=True).encode()).hexdigest()
-
-    logger.debug(f"Building desired CronJob for metric '{metric_name}' with schedule '{cron_schedule}'.")
     cronjob_name = f"{metric_name}-evaluator"
 
-    # Create a simplified spec JSON with fewer fields to reduce the chance of differences
-    simplified_spec = {
-        "name": resource_spec.get("name"),
-        "description": resource_spec.get("description", ""),
-        "grading-system": resource_spec.get("grading-system", ""),
-        "componentType": resource_spec.get("componentType", [])
-    }
+    # Use a simplified command that won't change on every reconciliation
+    curl_command = f"curl -X POST {METRIC_EVALUATION_SERVICE_URL}/evaluate/{metric_name}"
 
-    metric_spec_json = json.dumps(simplified_spec)
-    curl_command = f"curl -X POST {METRIC_EVALUATION_SERVICE_URL}/evaluate/{metric_name} -H 'Content-Type: application/json'"
-
-    annotations = {
-        "metric.catalog.onefootball.com/name": metric_name,
-        "metric.catalog.onefootball.com/spec-hash": spec_hash
-    }
-
-    labels = parent_resource["metadata"].get("labels", {}).copy()
-    default_labels = {
+    # Create stable labels
+    labels = {
         "metric.catalog.onefootball.com/name": metric_name,
         "grading-system": resource_spec.get("grading-system", "unknown"),
         "spec-hash": spec_hash[:8]
     }
-    labels.update(default_labels)
+
+    if "metadata" in parent_resource and "labels" in parent_resource["metadata"]:
+        for key, value in parent_resource["metadata"]["labels"].items():
+            if key not in labels:
+                labels[key] = value
+
+    annotations = {
+        "metric.catalog.onefootball.com/name": metric_name,
+        "metric.catalog.onefootball.com/spec-hash": spec_hash,
+        "metric.catalog.onefootball.com/last-updated": parent_resource["metadata"].get("resourceVersion", "0")
+    }
+
+    logger.info(f"Building CronJob for metric '{metric_name}' with hash '{spec_hash[:8]}'")
 
     desired_cronjob = {
         "apiVersion": "batch/v1",
