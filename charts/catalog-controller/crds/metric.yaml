@@ -173,6 +173,12 @@ spec:
                    format: date-time
                    nullable: true
                    description: Timestamp of when the metric facts were last evaluated by the controller.
+                observedGeneration:
+                  description: >-
+                    The most recent generation observed by the controller.
+                    Used to track whether the spec has changed since the last reconciliation.
+                  type: integer
+                  format: int64
             apiVersion:
               type: string
             kind:

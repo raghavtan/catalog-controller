@@ -99,6 +99,12 @@ spec:
                 ownerId:
                   type: string
                   description: The identifier of the owning team or entity.
+                observedGeneration:
+                  description: >-
+                    The most recent generation observed by the controller.
+                    Used to track whether the spec has changed since the last reconciliation.
+                  type: integer
+                  format: int64
                 metricSources:
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
