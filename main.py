@@ -26,7 +26,6 @@ async def sync_generic(
                                            description="Resource kind to sync (e.g., 'components', 'scorecards', 'metrics')"
                                            )):
     logger.info(f"Received sync request for {resource_kind}: {request_data.parent.metadata.name}")
-    logger.info(f"Request data: {request_data}")
     return sync_resource(request_data, resource_kind)
 
 

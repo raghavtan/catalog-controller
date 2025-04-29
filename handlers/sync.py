@@ -58,9 +58,6 @@ def sync_resource(request_data: MetacontrollerRequest, resource_kind: str) -> JS
 
     desired_children = generate_child_resources(resource_kind, parent, desired_status)
 
-    logger.info(f"Desired children: {desired_children}")
-    logger.info(f"Desired status: {desired_status}")
-
     if desired_status != current_status:
         logger.info(f"Returning Updated status {resource_kind}/{parent['metadata']['name']}.")
         return JSONResponse(
