@@ -132,10 +132,6 @@ spec:
           type: string
           jsonPath: .status.id
           description: Unique identifier assigned to the Component
-        - name: Sources
-          type: array
-          jsonPath: .status.metricAssociation
-          description: Associated metric sources for the Component
   scope: Namespaced
   names:
     plural: components
