@@ -9,7 +9,7 @@ from service.handlers.metric import sync_metric
 from service.models.models import MetacontrollerRequest
 from service.utils.endpoint_filter import EndpointFilter
 
-logging.basicConfig(level=logging.INFO, stream=sys.stderr, format='%(asctime)s - %(message)s')
+logging.basicConfig(level=logging.INFO, stream=sys.stderr, format='%(asctime)s [%(levelname)s] [%(name)s] - %(message)s')
 logger = logging.getLogger("CatalogController")
 
 app = FastAPI(swagger_ui_parameters={"syntaxHighlight.theme": "obsidian"})
@@ -19,7 +19,7 @@ uvicorn_logger.addFilter(EndpointFilter(path="/healthz"))
 
 @app.post("/metric/sync")
 async def metric(request_data: MetacontrollerRequest = Body(...)):
-    logger.info(f"Received sync request for metric: {request_data}")
+    logger.info(f"Received sync request for metric: {request_data.parent.metadata.name}")
     response_content, status_code = await sync_metric(request_data)
     return JSONResponse(response_content, status_code)
 

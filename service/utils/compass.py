@@ -4,8 +4,6 @@ import logging
 import json
 import sys
 
-logging.basicConfig(level=logging.INFO, stream=sys.stderr,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("SyncHandler")
 
 

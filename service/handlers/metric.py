@@ -5,8 +5,6 @@ from service.models.models import MetacontrollerRequest, SyncResponse
 from service.scheduler.scheduler import build_metric_evaluator_cronjob
 from service.utils.compass import CompassAPI
 
-logging.basicConfig(level=logging.INFO, stream=sys.stderr,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("MetricHandler")
 
 
