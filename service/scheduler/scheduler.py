@@ -45,7 +45,7 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Tuple[Lis
             f"{controller_prefix}/grading-system": resource_spec.get("grading-system", "unknown")
         }
 
-        template_path = "templates/cronjob.yaml"
+        template_path = "service/scheduler/cronjob.yaml"
         with open(template_path, 'r') as file:
             cronjob_template = yaml.safe_load(file)
 
