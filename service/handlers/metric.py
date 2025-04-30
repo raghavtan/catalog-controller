@@ -40,9 +40,11 @@ async def sync_metric(request_data: MetacontrollerRequest):
         if response_status["id"]:
             desired_cronjob = build_metric_evaluator_cronjob(parent)
             if desired_cronjob:
-                existing_cronjob = next((job for job in children if
-                                        job.get('kind') == 'CronJob' and
-                                        job.get('metadata', {}).get('name') == desired_cronjob['metadata']['name']), None)
+                logger.info(f"Existing CronJob: {children['CronJob.batch/v1']}")
+                if isinstance(children['CronJob.batch/v1'], list):
+                    existing_cronjob = next((cj for cj in children['CronJob.batch/v1'] if cj['metadata']['name'] == desired_cronjob['metadata']['name']), None)
+                else:
+                    existing_cronjob = None
 
                 if not (existing_cronjob and
                         existing_cronjob['metadata']['name'] == desired_cronjob['metadata']['name'] and

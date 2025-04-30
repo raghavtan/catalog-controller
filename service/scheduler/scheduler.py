@@ -26,8 +26,8 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
         curl_command += f"-H 'Content-Type: application/json' -d '{{\"spec\": {json.dumps(resource_spec)}}}'"
         labels = {
             "metric.catalog.onefootball.com/name": metric_name,
-            "grading-system": resource_spec.get("grading-system", "unknown"),
-            "spec-hash": spec_hash[:8]
+            "metric.catalog.onefootball.com/grading-system": resource_spec.get("grading-system", "unknown"),
+            "metric.catalog.onefootball.com/spec-hash": spec_hash
         }
 
         if "metadata" in parent_resource and "labels" in parent_resource["metadata"]:
@@ -37,7 +37,8 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
 
         annotations = {
             "metric.catalog.onefootball.com/name": metric_name,
-            "metric.catalog.onefootball.com/spec-hash": spec_hash
+            "metric.catalog.onefootball.com/spec-hash": spec_hash,
+            "metric.catalog.onefootball.com/grading-system": resource_spec.get("grading-system", "unknown")
         }
 
         logger.info(f"Building CronJob for metric '{metric_name}' with hash '{spec_hash[:8]}'")
