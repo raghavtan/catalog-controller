@@ -19,5 +19,4 @@ spec:
     - service
     - cloud-resource
   grading-system: security
-  evaluateOnDeploy: true
   cronSchedule: "0 * * * *"

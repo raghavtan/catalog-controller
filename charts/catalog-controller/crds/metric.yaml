@@ -135,55 +135,10 @@ spec:
                   type: string
                   nullable: true
                   description: A unique identifier assigned by the controller upon processing.
-                conditions:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - type
-                      - status
-                      - lastTransitionTime
-                      - reason
-                      - message
-                    properties:
-                      type:
-                        type: string
-                        description: Type of condition (e.g., Ready, Synced).
-                        enum: [ "Ready", "Synced", "Failed", "Unknown" ]
-                        nullable: true
-                        default: Unknown
-                      status:
-                        type: string
-                        enum: ["True", "False", Unknown]
-                        description: Status of the condition.
-                        default: Unknown
-                      lastTransitionTime:
-                        type: string
-                        format: date-time
-                        description: The last time the condition transitioned from one status to another.
-                      reason:
-                        type: string
-                        description: A brief, machine-readable reason for the condition's last transition.
-                      message:
-                        type: string
-                        description: A human-readable message indicating details about the last transition.
-                  description: Represents the latest available observations of the metric's state.
-                lastEvaluatedTime:
-                   type: string
-                   format: date-time
-                   nullable: true
-                   description: Timestamp of when the metric facts were last evaluated by the controller.
-                observedGeneration:
-                  description: >-
-                    The most recent generation observed by the controller.
-                    Used to track whether the spec has changed since the last reconciliation.
-                  type: integer
-                  format: int64
-                lastResourceVersion:
-                  description: >-
-                    The resource version that was last processed.
-                    Used to avoid unnecessary reconciliations.
+                cronJob:
                   type: string
+                  nullable: true
+                  description: status of the cron job created for periodic evaluation.
             apiVersion:
               type: string
             kind:
@@ -193,30 +148,26 @@ spec:
           required:
             - spec
       additionalPrinterColumns:
-        - name: Component-Type
+        - name: Type
           type: string
           description: The type of component(s) this metric applies to
           jsonPath: .spec.componentType
-        - name: Grading-System
+        - name: System
           type: string
           description: The grading system category this metric belongs to
           jsonPath: .spec.grading-system
-        - name: evaluateOnDeploy
-          type: boolean
-          description: Whether the metric is evaluated on deployment
-          jsonPath: .spec.evaluateOnDeploy
         - name: Schedule
           type: string
           description: Cron schedule for periodic evaluation of the metric
           jsonPath: .spec.cronSchedule
-        - name: Status
+        - name: cronJob
           type: string
-          description: The Ready status of the metric
-          jsonPath: .status.conditions[?(@.type=="Ready")].status
-        - name: Last-Evaluated
-          type: date
-          description: Timestamp of the last evaluation
-          jsonPath: .status.lastEvaluatedTime
+          description: Status of the cron job created for periodic evaluation
+          jsonPath: .status.cronJob
+        - name: ID
+          type: string
+          description: Unique identifier assigned by the controller upon processing
+          jsonPath: .status.id
   scope: Cluster
   names:
     plural: metrics

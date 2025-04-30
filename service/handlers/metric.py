@@ -1,0 +1,71 @@
+import logging
+import sys
+
+from service.models.models import MetacontrollerRequest, SyncResponse
+from service.scheduler.scheduler import build_metric_evaluator_cronjob
+from service.utils.compass import CompassAPI
+
+logging.basicConfig(level=logging.INFO, stream=sys.stderr,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("MetricHandler")
+
+
+async def sync_metric(request_data: MetacontrollerRequest):
+    parent = request_data.parent.model_dump(by_alias=True)
+    children = request_data.children
+    desired_children = []
+
+    metric_name = parent['metadata']['name']
+    try:
+        response_status = {"id": None, "cronJob": None}
+        compass_client = CompassAPI()
+        if parent.get('status', {}).get('id'):
+            metric_id = parent['status']['id']
+            logger.info(f"Found existing ID {metric_id} for metric {metric_name}")
+            response = await compass_client.dummy_call("get", "metric", parent)
+
+            if response['status_code'] == 200:
+                compass_id = response.get('id')
+                if compass_id:
+                    response_status["id"] = compass_id
+                    if compass_id != metric_id:
+                        logger.warning(f"Metric ID mismatch for {metric_name}. Expected: {metric_id}, Found: {compass_id}")
+                else:
+                    logger.warning(f"Metric {metric_name} not found in Compass despite having ID. Creating new resource.")
+                    response_status["id"] = await create_metric(compass_client, parent, metric_name)
+            else:
+                logger.error(f"Failed to retrieve metric {metric_name}. Status code: {response['status_code']}")
+        else:
+            logger.info(f"No ID found for metric {metric_name}. Creating new.")
+            response_status["id"] = await create_metric(compass_client, parent, metric_name)
+
+        if response_status["id"]:
+            desired_cronjob = build_metric_evaluator_cronjob(parent)
+            if desired_cronjob:
+                existing_cronjob = next((job for job in children if
+                                        job.get('kind') == 'CronJob' and
+                                        job.get('metadata', {}).get('name') == desired_cronjob['metadata']['name']), None)
+
+                if not (existing_cronjob and
+                        existing_cronjob['metadata']['name'] == desired_cronjob['metadata']['name'] and
+                        existing_cronjob['spec'] == desired_cronjob['spec']):
+                    logger.info(f"Adding new/updated CronJob for {metric_name}")
+                    desired_children.append(desired_cronjob)
+                    response_status["cronJob"] = "Created"
+                else:
+                    logger.info(f"Using existing CronJob for {metric_name}")
+
+        return SyncResponse(status=response_status, children=desired_children).model_dump(by_alias=True), 200
+    except Exception as e:
+        logger.error(f"Error syncing metric {parent['metadata']['name']}: {str(e)}")
+        return SyncResponse(status={"error": str(e)}).model_dump(by_alias=True), 500
+
+
+async def create_metric(compass_client, parent, metric_name):
+    response = await compass_client.dummy_call("create", "metric", parent)
+    if response['status_code'] == 201:
+        logger.info(f"Created new metric {metric_name} with ID: {response.get('id')}")
+        return response.get('id')
+    else:
+        logger.error(f"Failed to create metric {metric_name}. Status code: {response['status_code']}")
+        return None

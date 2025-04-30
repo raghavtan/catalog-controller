@@ -124,13 +124,6 @@ components:
       - spec
       title: ParentResource
       type: object
-    ResourceKind:
-      enum:
-      - component
-      - scorecard
-      - metric
-      title: ResourceKind
-      type: string
     ValidationError:
       properties:
         loc:
@@ -158,17 +151,9 @@ info:
   version: 1.0.0
 openapi: 3.1.0
 paths:
-  /finalize/{resource_kind}:
+  /finalize:
     post:
-      operationId: finalize_generic_finalize__resource_kind__post
-      parameters:
-      - description: Resource kind to sync (e.g., 'components', 'scorecards', 'metrics')
-        in: path
-        name: resource_kind
-        required: true
-        schema:
-          $ref: '#/components/schemas/ResourceKind'
-          description: Resource kind to sync (e.g., 'components', 'scorecards', 'metrics')
+      operationId: finalize_finalize_post
       requestBody:
         content:
           application/json:
@@ -187,7 +172,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
-      summary: Finalize Generic
+      summary: Finalize
   /healthz:
     get:
       operationId: health_check_healthz_get
@@ -198,17 +183,9 @@ paths:
               schema: {}
           description: Successful Response
       summary: Health Check
-  /sync/{resource_kind}:
+  /metric/sync:
     post:
-      operationId: sync_generic_sync__resource_kind__post
-      parameters:
-      - description: Resource kind to sync (e.g., 'components', 'scorecards', 'metrics')
-        in: path
-        name: resource_kind
-        required: true
-        schema:
-          $ref: '#/components/schemas/ResourceKind'
-          description: Resource kind to sync (e.g., 'components', 'scorecards', 'metrics')
+      operationId: metric_metric_sync_post
       requestBody:
         content:
           application/json:
@@ -227,4 +204,4 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
-      summary: Sync Generic
+      summary: Metric

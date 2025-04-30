@@ -1,63 +1,37 @@
 import logging
 import sys
-import typing as t
 
-from fastapi import FastAPI, Path
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
-from handlers.cleanup import finalize_resource
-from handlers.sync import sync_resource
-from models import (
-    MetacontrollerRequest,
-    ResourceKind
-)
+from service.handlers.cleanup import finalize_resource
+from service.handlers.metric import sync_metric
+from service.models.models import MetacontrollerRequest
+from service.utils.endpoint_filter import EndpointFilter
 
-logging.basicConfig(level=logging.INFO, stream=sys.stderr,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
-
+logging.basicConfig(level=logging.INFO, stream=sys.stderr, format='%(asctime)s - %(message)s')
 logger = logging.getLogger("CatalogController")
 
 app = FastAPI(swagger_ui_parameters={"syntaxHighlight.theme": "obsidian"})
+uvicorn_logger = logging.getLogger("uvicorn.access")
+uvicorn_logger.addFilter(EndpointFilter(path="/healthz"))
 
 
-@app.post("/sync/{resource_kind}")
-async def sync_generic(
-        request_data: MetacontrollerRequest,
-        resource_kind: ResourceKind = Path(...,
-                                           description="Resource kind to sync (e.g., 'components', 'scorecards', 'metrics')"
-                                           )):
-    logger.info(f"Received sync request for {resource_kind}: {request_data.parent.metadata.name}")
-    return sync_resource(request_data, resource_kind)
+@app.post("/metric/sync")
+async def metric(request_data: MetacontrollerRequest):
+    logger.info(f"Received sync request for metric: {request_data.parent.metadata.name}")
+    response_content, status_code = await sync_metric(request_data)
+    return JSONResponse(response_content, status_code)
 
 
-@app.post("/finalize/{resource_kind}")
-async def finalize_generic(
-        request_data: MetacontrollerRequest,
-        resource_kind: ResourceKind = Path(...,
-                                           description="Resource kind to sync (e.g., 'components', 'scorecards', 'metrics')"
-                                           )):
-    logger.info(f"Received finalize request for {resource_kind}: {request_data.parent.metadata.name}")
-    return finalize_resource(request_data, resource_kind)
+@app.post("/finalize")
+async def finalize(request_data: MetacontrollerRequest):
+    logger.info(f"Received finalize request for {request_data.parent.kind}:{request_data.parent.metadata.name}")
+    response_content, status_code = await finalize_resource(request_data)
+    return JSONResponse(response_content, status_code)
 
 
 @app.get("/healthz")
 async def health_check():
     return {"status": "ok"}
 
-
-class EndpointFilter(logging.Filter):
-    def __init__(
-            self,
-            path: str,
-            *args: t.Any,
-            **kwargs: t.Any,
-    ):
-        super().__init__(*args, **kwargs)
-        self._path = path
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        return record.getMessage().find(self._path) == -1
-
-
-uvicorn_logger = logging.getLogger("uvicorn.access")
-uvicorn_logger.addFilter(EndpointFilter(path="/healthz"))
-uvicorn_logger.addFilter(EndpointFilter(path="/"))
