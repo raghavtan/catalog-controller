@@ -99,67 +99,24 @@ spec:
                 ownerId:
                   type: string
                   description: The identifier of the owning team or entity.
-                observedGeneration:
-                  description: >-
-                    The most recent generation observed by the controller.
-                    Used to track whether the spec has changed since the last reconciliation.
-                  type: integer
-                  format: int64
-                metricSources:
-                  type: object
-                  x-kubernetes-preserve-unknown-fields: true
-                  additionalProperties:
-                    type: object
-                    required:
-                      - id
-                      - name
-                      - metric
-                    properties:
-                      id:
-                        type: string
-                        description: The unique identifier of the metric source.
-                      name:
-                        type: string
-                        description: The name of the metric source.
-                      metric:
-                        type: string
-                        description: The identifier of the associated metric definition.
-                      facts:
-                        type: array
-                        items:
-                          type: object
-                          x-kubernetes-preserve-unknown-fields: true
-                        description: Additional facts or data related to the metric source.
-                  description: Status for each metric source associated with the component, keyed by metric name.
-                conditions:
+                metricAssociation:
                   type: array
+                  description: Association between metric names and their unique identifiers.
                   items:
                     type: object
                     required:
-                      - type
-                      - status
-                      - lastTransitionTime
-                      - reason
-                      - message
+                      - metricName
+                      - metricId
                     properties:
-                      type:
+                      metricName:
                         type: string
-                        description: Type of condition (e.g., Ready, Synced).
-                      status:
+                        description: The internal name/key of the metric.
+                      metricId:
                         type: string
-                        enum: ["True", "False", "Unknown"]
-                        description: Status of the condition.
-                      lastTransitionTime:
+                        description: The unique identifier for the metric.
+                      metricSourceId:
                         type: string
-                        format: date-time
-                        description: Last time the condition transitioned from one status to another.
-                      reason:
-                        type: string
-                        description: A unique, one-word, CamelCase reason for the condition's last transition.
-                      message:
-                        type: string
-                        description: A human-readable message indicating details about the last transition.
-                  description: Represents the latest available observations of the component's state.
+                        description: The unique identifier for the metric.
       subresources:
         status: {}
       additionalPrinterColumns:
@@ -171,10 +128,14 @@ spec:
           type: string
           jsonPath: .spec.name
           description: Human-readable name of the Component
-        - name: Status
+        - name: ID
           type: string
-          jsonPath: .status.conditions[?(@.type=="Ready")].status
-          description: The Ready status condition
+          jsonPath: .status.id
+          description: Unique identifier assigned to the Component
+        - name: Sources
+          type: array
+          jsonPath: .status.metricAssociation
+          description: Associated metric sources for the Component
   scope: Namespaced
   names:
     plural: components

@@ -40,10 +40,10 @@ controllers:
     resyncPeriod: *resyncPeriodSeconds
     service: catalog-controller.catalog-controller.svc.cluster.local
     sync:
-      path: "/sync/component"
+      path: "/component/sync"
       timeout: *timeoutSeconds
     finalizer:
-      path: "/finalize/component"
+      path: "/finalize"
       timeout: *timeoutSeconds
   - resource: "scorecards"
     resyncPeriod: *resyncPeriodSeconds
