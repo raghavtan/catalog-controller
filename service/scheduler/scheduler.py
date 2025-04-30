@@ -3,6 +3,7 @@ import logging
 import os
 import hashlib
 from typing import Dict, Any, Tuple, List
+import yaml
 
 logger = logging.getLogger("CronJobSubHandler")
 
@@ -15,6 +16,8 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Tuple[Lis
         resource_spec = parent_resource.get("spec", {})
         cron_schedule = resource_spec.get("cronSchedule")
 
+        controller_prefix = os.getenv("CONTROLLER_PREFIX", "metric.catalog.onefootball.com")
+
         if not cron_schedule:
             logger.info(f"Metric '{metric_name}' has no cronSchedule. No CronJob will be built.")
             return [], "NoSchedule"
@@ -24,10 +27,11 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Tuple[Lis
 
         curl_command = f"curl -X POST {METRIC_EVALUATION_SERVICE_URL}/evaluate/{metric_name} "
         curl_command += f"-H 'Content-Type: application/json' -d '{{\"spec\": {json.dumps(resource_spec)}}}'"
+
         labels = {
-            "metric.catalog.onefootball.com/name": metric_name,
-            "metric.catalog.onefootball.com/grading-system": resource_spec.get("grading-system", "unknown"),
-            "metric.catalog.onefootball.com/spec-hash": spec_hash
+            f"{controller_prefix}/name": metric_name,
+            f"{controller_prefix}/grading-system": resource_spec.get("grading-system", "unknown"),
+            f"{controller_prefix}/spec-hash": spec_hash
         }
 
         if "metadata" in parent_resource and "labels" in parent_resource["metadata"]:
@@ -36,47 +40,27 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Tuple[Lis
                     labels[key] = value
 
         annotations = {
-            "metric.catalog.onefootball.com/name": metric_name,
-            "metric.catalog.onefootball.com/spec-hash": spec_hash,
-            "metric.catalog.onefootball.com/grading-system": resource_spec.get("grading-system", "unknown")
+            f"{controller_prefix}/name": metric_name,
+            f"{controller_prefix}/spec-hash": spec_hash,
+            f"{controller_prefix}/grading-system": resource_spec.get("grading-system", "unknown")
         }
 
-        logger.info(f"Building CronJob for metric '{metric_name}' with hash '{spec_hash[:8]}'")
+        template_path = "templates/cronjob.yaml"
+        with open(template_path, 'r') as file:
+            cronjob_template = yaml.safe_load(file)
 
-        desired_cronjob = {
-            "apiVersion": "batch/v1",
-            "kind": "CronJob",
-            "metadata": {
-                "name": cronjob_name,
-                "namespace": "catalog-controller",
-                "labels": labels,
-                "annotations": annotations
-            },
-            "spec": {
-                "schedule": cron_schedule,
-                "jobTemplate": {
-                    "spec": {
-                        "template": {
-                            "metadata": {
-                                "labels": labels
-                            },
-                            "spec": {
-                                "restartPolicy": "OnFailure",
-                                "containers": [
-                                    {
-                                        "name": "compute-caller",
-                                        "image": "alpine/curl",
-                                        "command": ["/bin/sh", "-c", curl_command]
-                                    }
-                                ],
-                            }
-                        },
-                    }
-                }
-            }
-        }
+        cronjob_template["metadata"]["name"] = cronjob_name
+        cronjob_template["metadata"]["labels"] = labels
+        cronjob_template["metadata"]["annotations"] = annotations
+        cronjob_template["spec"]["jobTemplate"]["metadata"]["labels"] = labels
+        cronjob_template["spec"]["jobTemplate"]["spec"]["template"]["metadata"]["labels"] = labels
+        cronjob_template["spec"]["schedule"] = cron_schedule
 
-        return [desired_cronjob], "Created"
+        for container in cronjob_template["spec"]["jobTemplate"]["spec"]["template"]["spec"]["containers"]:
+            if container["name"] == "compute-caller":
+                container["command"] = ["/bin/sh", "-c", curl_command]
+
+        return [cronjob_template], "Created"
     except Exception as e:
         logger.error(f"Error building CronJob for metric '{parent_resource['metadata']['name']}': {e}")
         return [], "Failed"
