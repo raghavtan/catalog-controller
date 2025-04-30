@@ -58,10 +58,10 @@ controllers:
     resyncPeriod: *resyncPeriodSeconds
     service: catalog-controller.catalog-controller.svc.cluster.local
     sync:
-      path: "/sync/metric"
+      path: "/metric/sync"
       timeout: *timeoutSeconds
     finalizer:
-      path: "/finalize/metric"
+      path: "/finalize"
       timeout: *timeoutSeconds
     children:
       - apiVersion: batch/v1
