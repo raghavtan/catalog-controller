@@ -1,5 +1,5 @@
 import logging
-import sys
+import traceback
 
 from service.models.models import MetacontrollerRequest, SyncResponse
 from service.scheduler.scheduler import build_metric_evaluator_cronjob
@@ -55,15 +55,21 @@ async def sync_metric(request_data: MetacontrollerRequest):
 
         return SyncResponse(status=response_status, children=desired_children).model_dump(by_alias=True), 200
     except Exception as e:
-        logger.error(f"Error syncing metric {parent['metadata']['name']}: {str(e)}")
+        stack_trace = traceback.format_exc()
+        logger.error(f"Error syncing metric {parent['metadata']['name']}: {str(e)}\nStack trace:\n{stack_trace}")
         return SyncResponse(status={"error": str(e)}).model_dump(by_alias=True), 500
 
 
 async def create_metric(compass_client, parent, metric_name):
-    response = await compass_client.dummy_call("create", "metric", parent)
-    if response['status_code'] == 201:
-        logger.info(f"Created new metric {metric_name} with ID: {response.get('id')}")
-        return response.get('id')
-    else:
-        logger.error(f"Failed to create metric {metric_name}. Status code: {response['status_code']}")
-        return None
+    try:
+        response = await compass_client.dummy_call("create", "metric", parent)
+        if response['status_code'] == 201:
+            logger.info(f"Created new metric {metric_name} with ID: {response.get('id')}")
+            return response.get('id')
+        else:
+            logger.error(f"Failed to create metric {metric_name}. Status code: {response['status_code']}")
+            return None
+    except Exception as e:
+        stack_trace = traceback.format_exc()
+        logger.error(f"Exception in create_metric for {metric_name}: {str(e)}\nStack trace:\n{stack_trace}")
+        raise
