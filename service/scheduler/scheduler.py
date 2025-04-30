@@ -2,14 +2,14 @@ import json
 import logging
 import os
 import hashlib
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Tuple, List
 
 logger = logging.getLogger("CronJobSubHandler")
 
 METRIC_EVALUATION_SERVICE_URL = os.getenv("METRIC_EVALUATION_SERVICE_URL", "metric-evaluation-service")
 
 
-def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], str]:
     try:
         metric_name = parent_resource["metadata"]["name"]
         resource_spec = parent_resource.get("spec", {})
@@ -17,7 +17,7 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
 
         if not cron_schedule:
             logger.info(f"Metric '{metric_name}' has no cronSchedule. No CronJob will be built.")
-            return None
+            return [], "NoSchedule"
 
         spec_hash = hashlib.md5(json.dumps(resource_spec, sort_keys=True).encode()).hexdigest()
         cronjob_name = f"{metric_name}-evaluator"
@@ -76,7 +76,7 @@ def build_metric_evaluator_cronjob(parent_resource: Dict[str, Any]) -> Optional[
             }
         }
 
-        return desired_cronjob
+        return [desired_cronjob], "Created"
     except Exception as e:
         logger.error(f"Error building CronJob for metric '{parent_resource['metadata']['name']}': {e}")
-        return None
+        return [], "Failed"

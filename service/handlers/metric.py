@@ -10,13 +10,12 @@ logger = logging.getLogger("MetricHandler")
 
 async def sync_metric(request_data: MetacontrollerRequest):
     parent = request_data.parent.model_dump(by_alias=True)
-    children = request_data.children
-    desired_children = []
 
     metric_name = parent['metadata']['name']
     try:
         response_status = {"id": None, "cronJob": None}
         compass_client = CompassAPI()
+
         if parent.get('status', {}).get('id'):
             metric_id = parent['status']['id']
             logger.info(f"Found existing ID {metric_id} for metric {metric_name}")
@@ -40,29 +39,15 @@ async def sync_metric(request_data: MetacontrollerRequest):
             response_status["id"] = await create_metric(compass_client, parent, metric_name)
 
         if response_status["id"]:
-            desired_cronjob = build_metric_evaluator_cronjob(parent)
-            if desired_cronjob:
-                logger.info(f"Existing CronJob: {children['CronJob.batch/v1']}")
-                if isinstance(children['CronJob.batch/v1'], list):
-                    existing_cronjob = next((cj for cj in children['CronJob.batch/v1'] if
-                                             cj['metadata']['name'] == desired_cronjob['metadata']['name']), None)
-                else:
-                    existing_cronjob = None
 
-                if not (existing_cronjob and
-                        existing_cronjob['metadata']['name'] == desired_cronjob['metadata']['name'] and
-                        existing_cronjob['spec'] == desired_cronjob['spec']):
-                    logger.info(f"Adding new/updated CronJob for {metric_name}")
-                    desired_children.append(desired_cronjob)
-                    response_status["cronJob"] = "Created"
-                else:
-                    logger.info(f"Using existing CronJob for {metric_name}")
+            desired_children, response_status["cronJob"] = build_metric_evaluator_cronjob(parent)
+            logger.info(f"CronJob processing result for {metric_name}: {response_status["cronJob"]}")
 
         return SyncResponse(status=response_status, children=desired_children).model_dump(by_alias=True), 200
     except Exception as e:
         stack_trace = traceback.format_exc()
         logger.error(f"Error syncing metric {parent['metadata']['name']}: {str(e)}\nStack trace:\n{stack_trace}")
-        return SyncResponse(status={"error": str(e)}).model_dump(by_alias=True), 500
+        return SyncResponse(status={"error": str(e)}, children=[]).model_dump(by_alias=True), 500
 
 
 async def create_metric(compass_client, parent, metric_name):
