@@ -33,6 +33,5 @@ async def finalize(request_data: MetacontrollerRequest = Body(...)):
 
 @app.get("/healthz")
 async def health_check():
-    logging.info("Health check endpoint called")
     return {"status": "ok"}
 
