@@ -27,9 +27,11 @@ async def sync_metric(request_data: MetacontrollerRequest):
                 if compass_id:
                     response_status["id"] = compass_id
                     if compass_id != metric_id:
-                        logger.warning(f"Metric ID mismatch for {metric_name}. Expected: {metric_id}, Found: {compass_id}")
+                        logger.warning(
+                            f"Metric ID mismatch for {metric_name}. Expected: {metric_id}, Found: {compass_id}")
                 else:
-                    logger.warning(f"Metric {metric_name} not found in Compass despite having ID. Creating new resource.")
+                    logger.warning(
+                        f"Metric {metric_name} not found in Compass despite having ID. Creating new resource.")
                     response_status["id"] = await create_metric(compass_client, parent, metric_name)
             else:
                 logger.error(f"Failed to retrieve metric {metric_name}. Status code: {response['status_code']}")
@@ -42,7 +44,8 @@ async def sync_metric(request_data: MetacontrollerRequest):
             if desired_cronjob:
                 logger.info(f"Existing CronJob: {children['CronJob.batch/v1']}")
                 if isinstance(children['CronJob.batch/v1'], list):
-                    existing_cronjob = next((cj for cj in children['CronJob.batch/v1'] if cj['metadata']['name'] == desired_cronjob['metadata']['name']), None)
+                    existing_cronjob = next((cj for cj in children['CronJob.batch/v1'] if
+                                             cj['metadata']['name'] == desired_cronjob['metadata']['name']), None)
                 else:
                     existing_cronjob = None
 
