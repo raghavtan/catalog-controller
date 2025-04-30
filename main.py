@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Body
 from fastapi.responses import JSONResponse
 
 from service.handlers.cleanup import finalize_resource
@@ -18,14 +18,14 @@ uvicorn_logger.addFilter(EndpointFilter(path="/healthz"))
 
 
 @app.post("/metric/sync")
-async def metric(request_data: MetacontrollerRequest):
-    logger.info(f"Received sync request for metric: {request_data.parent.metadata.name}")
+async def metric(request_data: MetacontrollerRequest = Body(...)):
+    logger.info(f"Received sync request for metric: {request_data}")
     response_content, status_code = await sync_metric(request_data)
     return JSONResponse(response_content, status_code)
 
 
 @app.post("/finalize")
-async def finalize(request_data: MetacontrollerRequest):
+async def finalize(request_data: MetacontrollerRequest = Body(...)):
     logger.info(f"Received finalize request for {request_data.parent.kind}:{request_data.parent.metadata.name}")
     response_content, status_code = await finalize_resource(request_data)
     return JSONResponse(response_content, status_code)
@@ -33,5 +33,6 @@ async def finalize(request_data: MetacontrollerRequest):
 
 @app.get("/healthz")
 async def health_check():
+    logging.info("Health check endpoint called")
     return {"status": "ok"}
 

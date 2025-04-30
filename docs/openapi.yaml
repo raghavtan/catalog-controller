@@ -64,8 +64,6 @@ components:
       required:
       - name
       - uid
-      - resourceVersion
-      - generation
       title: KubernetesMetadata
       type: object
     MetacontrollerRequest:
