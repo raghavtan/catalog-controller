@@ -49,10 +49,10 @@ controllers:
     resyncPeriod: *resyncPeriodSeconds
     service: catalog-controller.catalog-controller.svc.cluster.local
     sync:
-      path: "/sync/scorecard"
+      path: "/scorecard/sync"
       timeout: *timeoutSeconds
     finalizer:
-      path: "/finalize/scorecard"
+      path: "/finalize"
       timeout: *timeoutSeconds
   - resource: "metrics"
     resyncPeriod: *resyncPeriodSeconds

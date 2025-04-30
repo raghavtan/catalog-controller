@@ -92,63 +92,22 @@ spec:
                   description: A summary of the metrics used in the scorecard.
                   nullable: true
                   default: ""
-                criteria:
-                  type: object
-                  x-kubernetes-preserve-unknown-fields: true
-                  additionalProperties:
-                    type: object
-                    properties:
-                      metricDefinitionId:
-                        type: string
-                        description: The unique identifier of the corresponding metric definition.
-                    required:
-                      - metricDefinitionId
-                  description: Status for each criterion, keyed by the criterion's metric name.
-                conditions:
+                metricAssociation:
                   type: array
+                  description: Association between metric names and their unique identifiers.
                   items:
                     type: object
                     required:
-                      - type
-                      - status
-                      - lastTransitionTime
-                      - reason
-                      - message
+                      - metricName
+                      - metricId
                     properties:
-                      type:
+                      metricName:
                         type: string
-                        description: Type of condition (e.g., Ready, Synced).
-                        enum: ["Ready", "Synced", "Failed", "Unknown"]
-                        nullable: true
-                        default: Unknown
-                      status:
+                        description: The internal name/key of the metric.
+                      metricId:
                         type: string
-                        enum: ["True", "False", "Unknown"]
-                        description: Status of the condition.
-                        default: Unknown
-                      lastTransitionTime:
-                        type: string
-                        format: date-time
-                        description: Last time the condition transitioned from one status to another.
-                      reason:
-                        type: string
-                        description: A unique, one-word, CamelCase reason for the condition's last transition.
-                      message:
-                        type: string
-                        description: A human-readable message indicating details about the last transition.
-                  description: Represents the latest available observations of the scorecard's state.
-                lastEvaluatedTime:
-                    type: string
-                    format: date-time
-                    nullable: true
-                    description: The last time the scorecard's status was evaluated or updated by the controller.
-                observedGeneration:
-                  description: >-
-                    The most recent generation observed by the controller.
-                    Used to track whether the spec has changed since the last reconciliation.
-                  type: integer
-                  format: int64
-              x-kubernetes-preserve-unknown-fields: true
+                        description: The unique identifier for the metric.
+
       subresources:
         status: {}
       additionalPrinterColumns:
@@ -156,14 +115,10 @@ spec:
           type: string
           jsonPath: .spec.componentTypeIds
           description: Component types the scorecard applies to
-        - name: Status
+        - name: ID
           type: string
-          jsonPath: .status.conditions[?(@.type=="Ready")].status
-          description: The Ready status condition
-        - name: Last-Evaluated
-          type: date
-          jsonPath: .status.lastEvaluatedTime
-          description: Last time the scorecard status was evaluated
+          description: Unique identifier assigned by the controller upon processing
+          jsonPath: .status.id
         - name: Metrics
           type: string
           jsonPath: .status.metricsSummary
