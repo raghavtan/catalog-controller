@@ -8,8 +8,8 @@ logger = get_logger("FinalizeHandler")
 
 
 async def finalize_resource(request_data: MetacontrollerRequest):
+    parent = request_data.parent.model_dump(by_alias=True)
     try:
-        parent = request_data.parent.model_dump(by_alias=True)
         name = parent["metadata"]["name"]
         kind = parent["kind"].lower()
         compass_id = parent["status"].get('id')

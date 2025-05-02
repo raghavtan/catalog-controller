@@ -37,12 +37,6 @@ class TestBuildMetricEvaluatorCronJob(unittest.TestCase):
 
         self.maxDiff = None
 
-        with open('generated.yaml', 'w') as f:
-            yaml.dump(generated_cronjob, f)
-
-        with open('expected.yaml', 'w') as f:
-            yaml.dump(self.expected_cronjob, f)
-
         self.assertDictEqual(generated_cronjob, self.expected_cronjob)
 
     def test_build_metric_evaluator_cronjob_no_schedule(self):
