@@ -2,6 +2,7 @@ import logging
 import typing as t
 
 
+
 class EndpointFilter(logging.Filter):
     def __init__(
             self,
