@@ -83,6 +83,8 @@ spec:
             status:
               type: object
               properties:
+                observedGeneration:
+                  type: integer
                 id:
                   type: string
                   nullable: true

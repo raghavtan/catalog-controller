@@ -1,5 +1,4 @@
 import logging
-import sys
 
 from fastapi import FastAPI, Body
 from fastapi.responses import JSONResponse
@@ -10,34 +9,31 @@ from service.handlers.scorecard import sync_scorecard
 from service.handlers.component import sync_component
 from service.models.models import MetacontrollerRequest
 from service.utils.endpoint_filter import EndpointFilter
+from service.utils.log import get_logger
 
-logging.basicConfig(level=logging.INFO, stream=sys.stderr,
-                    format='%(asctime)s [%(levelname)s] [%(name)s] - %(message)s')
-logger = logging.getLogger("CatalogController")
+logger = get_logger("CatalogController")
 
 app = FastAPI(swagger_ui_parameters={"syntaxHighlight.theme": "obsidian"})
 uvicorn_logger = logging.getLogger("uvicorn.access")
 uvicorn_logger.addFilter(EndpointFilter(path="/healthz"))
 
 
-@app.post("/metric/sync")
-async def metric(request_data: MetacontrollerRequest = Body(...)):
-    logger.info(f"Received sync request for metric: {request_data.parent.metadata.name}")
-    response_content, status_code = await sync_metric(request_data)
-    return JSONResponse(response_content, status_code)
+@app.post("/sync/{resource_type}")
+async def sync_resource(resource_type: str, request_data: MetacontrollerRequest = Body(...)):
+    logger.info(f"Received sync request for {resource_type}: {request_data.parent.metadata.name}")
+    logger.debug(f"Request data: {request_data}")
 
+    if resource_type == "metric":
+        response_content, status_code = await sync_metric(request_data)
+    elif resource_type == "scorecard":
+        response_content, status_code = await sync_scorecard(request_data)
+    elif resource_type == "component":
+        response_content, status_code = await sync_component(request_data)
+    else:
+        logger.error(f"Unsupported resource type: {resource_type}")
+        return JSONResponse({"error": "Unsupported resource type"}, status_code=400)
 
-@app.post("/scorecard/sync")
-async def metric(request_data: MetacontrollerRequest = Body(...)):
-    logger.info(f"Received sync request for scorecard: {request_data.parent.metadata.name}")
-    response_content, status_code = await sync_scorecard(request_data)
-    return JSONResponse(response_content, status_code)
-
-
-@app.post("/component/sync")
-async def metric(request_data: MetacontrollerRequest = Body(...)):
-    logger.info(f"Received sync request for component: {request_data.parent.metadata.name}")
-    response_content, status_code = await sync_component(request_data)
+    logger.debug(f"Response content: {response_content}, status code: {status_code}")
     return JSONResponse(response_content, status_code)
 
 

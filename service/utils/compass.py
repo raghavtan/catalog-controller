@@ -1,10 +1,10 @@
 import json
-import logging
+from service.utils.log import get_logger
 import os
 
 import httpx
 
-logger = logging.getLogger("SyncHandler")
+logger = get_logger("CompassAPI")
 
 
 class CompassAPI:
@@ -14,31 +14,19 @@ class CompassAPI:
 
     async def call(self, operation: str, resource_kind: str, resource_data: dict) -> dict:
 
-        logger.info(f"Calling Compass API: {operation} {resource_kind} for {resource_data['metadata']['name']}")
+        logger.debug(f"Calling Compass API: {operation} {resource_kind} for {resource_data['metadata']['name']}")
+        headers = {"Content-Type": "application/json","Accept": "application/json"}
+        request_url = f"{self.base_url}/{resource_kind}/{resource_data['status']['id']}"
 
         try:
             async with httpx.AsyncClient() as client:
                 if operation == "delete":
-                    request_url = f"{self.base_url}/{resource_kind}/{resource_data['status']['id']}"
                     response = await client.delete(request_url)
                 elif operation == "create":
-                    request_url = f"{self.base_url}/{resource_kind}"
-                    request_data = json.dumps(resource_data)
-                    headers = {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    }
-                    response = await client.post(request_url, data=request_data, headers=headers)
+                    response = await client.post(f"{self.base_url}/{resource_kind}", data=resource_data, headers=headers)
                 elif operation == "update":
-                    request_url = f"{self.base_url}/{resource_kind}/{resource_data['status']['id']}"
-                    request_data = json.dumps(resource_data)
-                    headers = {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    }
-                    response = await client.put(request_url, data=request_data, headers=headers)
+                    response = await client.put(request_url, data=resource_data, headers=headers)
                 elif operation == "get":
-                    request_url = f"{self.base_url}/{resource_kind}/{resource_data['status']['id']}"
                     response = await client.get(request_url)
 
                 response.raise_for_status()
@@ -51,18 +39,14 @@ class CompassAPI:
             await client.aclose()
             return response.json()
 
-    import logging
-
-    logger = logging.getLogger(__name__)
-
     async def dummy_call(self, operation: str, resource_kind: str, resource_data: dict) -> dict:
         if resource_kind != "component_with_metrics":
             resource_name = resource_data['metadata']['name']
-            logger.info(f"Dummy call to {operation} {resource_kind} for {resource_name}")
+            logger.debug(f"Dummy call to {operation} {resource_kind} for {resource_name}")
         else:
             component_data = resource_data.get('component', {})
             resource_name = component_data.get('metadata', {}).get('name', 'unknown')
-            logger.info(f"Dummy call to {operation} {resource_kind} for {resource_name}")
+            logger.debug(f"Dummy call to {operation} {resource_kind} for {resource_name}")
 
         if operation == "delete":
             return {
@@ -116,7 +100,7 @@ class CompassAPI:
             else:
                 return {
                     "status_code": 200,
-                    "message": "Resource updated successfully",
+                    "message": "Resource updated",
                     "success": True
                 }
 

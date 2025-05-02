@@ -93,6 +93,8 @@ spec:
             status:
               type: object
               properties:
+                observedGeneration:
+                  type: integer
                 id:
                   type: string
                   description: The unique identifier assigned to the component (e.g., by an external system like Compass).

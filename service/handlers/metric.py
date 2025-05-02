@@ -1,11 +1,11 @@
-import logging
+from service.utils.log import get_logger
 import traceback
 
 from service.models.models import MetacontrollerRequest, SyncResponse
 from service.scheduler.scheduler import build_metric_evaluator_cronjob
 from service.utils.compass import CompassAPI
 
-logger = logging.getLogger("MetricHandler")
+logger = get_logger("MetricHandler")
 
 
 async def sync_metric(request_data: MetacontrollerRequest):
@@ -18,7 +18,7 @@ async def sync_metric(request_data: MetacontrollerRequest):
 
         if parent.get('status', {}).get('id'):
             metric_id = parent['status']['id']
-            logger.info(f"Found existing ID {metric_id} for metric {metric_name}")
+            logger.debug(f"Found existing ID {metric_id} for metric {metric_name}")
             response = await compass_client.dummy_call("get", "metric", parent)
 
             if response['status_code'] == 200:
@@ -35,13 +35,11 @@ async def sync_metric(request_data: MetacontrollerRequest):
             else:
                 logger.error(f"Failed to retrieve metric {metric_name}. Status code: {response['status_code']}")
         else:
-            logger.info(f"No ID found for metric {metric_name}. Creating new.")
+            logger.debug(f"No ID found for metric {metric_name}. Creating new.")
             response_status["id"] = await create_metric(compass_client, parent, metric_name)
 
-        if response_status["id"]:
-
-            desired_children, response_status["cronJob"] = build_metric_evaluator_cronjob(parent)
-            logger.info(f"CronJob processing result for {metric_name}: {response_status["cronJob"]}")
+        desired_children, response_status["cronJob"] = build_metric_evaluator_cronjob(parent)
+        logger.debug(f"CronJob processing result for {metric_name}: {response_status["cronJob"]}")
 
         return SyncResponse(status=response_status, children=desired_children).model_dump(by_alias=True), 200
     except Exception as e:
@@ -54,7 +52,7 @@ async def create_metric(compass_client, parent, metric_name):
     try:
         response = await compass_client.dummy_call("create", "metric", parent)
         if response['status_code'] == 201:
-            logger.info(f"Created new metric {metric_name} with ID: {response.get('id')}")
+            logger.debug(f"Created new metric {metric_name} with ID: {response.get('id')}")
             return response.get('id')
         else:
             logger.error(f"Failed to create metric {metric_name}. Status code: {response['status_code']}")

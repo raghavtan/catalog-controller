@@ -6,7 +6,7 @@
 
 ## Overview
 
-The Catalog Controller API provides endpoints for managing Components, Metrics, and Scorecards in Kubernetes using the Metacontroller pattern. This API synchronizes custom resources with Atlassian Compass and manages their lifecycle.
+The Catalog Controller API provides endpoints for managing resources in Kubernetes using the Metacontroller pattern. This API synchronizes custom resources and manages their lifecycle.
 
 ## 📋 Contents
 
@@ -20,9 +20,7 @@ The Catalog Controller API provides endpoints for managing Components, Metrics, 
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/component/sync` | Synchronize component resources with Compass |
-| `POST` | `/metric/sync` | Synchronize metric resources with Compass |
-| `POST` | `/scorecard/sync` | Synchronize scorecard resources with Compass |
+| `POST` | `/sync/{resource_type}` | Synchronize resources of the specified type |
 | `POST` | `/finalize` | Handle resource finalization when deleted |
 | `GET`  | `/healthz` | Health check endpoint |
 
@@ -42,41 +40,16 @@ Returns a simple status response to confirm the API is operational.
 }
 ```
 
-### Component Synchronization
+### Resource Synchronization
 
 ```http
-POST /component/sync
+POST /sync/{resource_type}
 ```
 
-Processes a component resource and synchronizes it with Compass.
+Processes a resource of the specified type and synchronizes it.
 
-**Request Body:**
-- MetacontrollerRequest (see schema below)
-
-**Response:**
-- JSON object with status and child resources (if any)
-
-### Metric Synchronization
-
-```http
-POST /metric/sync
-```
-
-Processes a metric resource and synchronizes it with Compass. Creates or updates CronJob resources for scheduled evaluation.
-
-**Request Body:**
-- MetacontrollerRequest (see schema below)
-
-**Response:**
-- JSON object with status and child resources (CronJobs)
-
-### Scorecard Synchronization
-
-```http
-POST /scorecard/sync
-```
-
-Processes a scorecard resource and synchronizes it with Compass.
+**Path Parameters:**
+- `resource_type` (string): The type of resource to synchronize
 
 **Request Body:**
 - MetacontrollerRequest (see schema below)
@@ -137,7 +110,7 @@ properties:
 
 ### ParentResource
 
-Represents the Kubernetes resource being processed (Component, Metric, or Scorecard).
+Represents the Kubernetes resource being processed.
 
 ```yaml
 type: object
@@ -152,7 +125,7 @@ properties:
     description: "API version of the resource"
   kind:
     type: string
-    description: "Kind of resource (Component, Metric, Scorecard)"
+    description: "Kind of resource"
   metadata:
     $ref: '#/components/schemas/KubernetesMetadata'
     description: "Kubernetes metadata"
@@ -162,8 +135,9 @@ properties:
     description: "Resource specification"
   status:
     type: object
+    nullable: true
     additionalProperties: true
-    description: "Current resource status"
+    description: "Current resource status (optional)"
 ```
 
 ### KubernetesMetadata
@@ -181,6 +155,7 @@ properties:
     description: "Resource name"
   namespace:
     type: string
+    nullable: true
     description: "Resource namespace (if namespaced)"
   uid:
     type: string
@@ -194,26 +169,71 @@ properties:
   creationTimestamp:
     type: string
     format: date-time
+    nullable: true
     description: "When the resource was created"
   deletionTimestamp:
     type: string
     format: date-time
+    nullable: true
     description: "When the resource was marked for deletion"
   annotations:
     type: object
+    nullable: true
     additionalProperties:
       type: string
     description: "Resource annotations"
   labels:
     type: object
+    nullable: true
     additionalProperties:
       type: string
     description: "Resource labels"
   finalizers:
     type: array
+    nullable: true
     items:
       type: string
     description: "Resource finalizers"
+```
+
+### HTTPValidationError
+
+Represents a validation error response.
+
+```yaml
+type: object
+properties:
+  detail:
+    type: array
+    items:
+      $ref: '#/components/schemas/ValidationError'
+    description: "List of validation errors"
+```
+
+### ValidationError
+
+Represents an individual validation error.
+
+```yaml
+type: object
+required:
+  - loc
+  - msg
+  - type
+properties:
+  loc:
+    type: array
+    items:
+      anyOf:
+        - type: string
+        - type: integer
+    description: "Location of the error"
+  msg:
+    type: string
+    description: "Error message"
+  type:
+    type: string
+    description: "Error type"
 ```
 
 ## 🔐 Authentication
@@ -222,31 +242,28 @@ This API is intended to be used by Metacontroller within a Kubernetes cluster. A
 
 ## 📝 Examples
 
-### Component Synchronization Request
+### Resource Synchronization Request
 
 ```json
 {
   "controller": {
     "apiVersion": "metacontroller.k8s.io/v1alpha1",
     "kind": "CompositeController",
-    "name": "components-controller"
+    "name": "resource-controller"
   },
   "parent": {
-    "apiVersion": "catalog.onefootball.com/v1alpha1",
-    "kind": "Component",
+    "apiVersion": "example.com/v1alpha1",
+    "kind": "CustomResource",
     "metadata": {
-      "name": "my-service",
-      "namespace": "my-team",
+      "name": "my-resource",
+      "namespace": "my-namespace",
       "uid": "12345678-1234-1234-1234-123456789012",
       "resourceVersion": "42"
     },
     "spec": {
-      "componentType": "service",
-      "name": "My Service",
-      "typeId": "SERVICE",
-      "description": "A microservice for authentication",
-      "tribe": "Platform",
-      "squad": "Auth"
+      "type": "service",
+      "name": "My Resource",
+      "description": "A custom resource example"
     }
   },
   "children": {},
@@ -255,66 +272,15 @@ This API is intended to be used by Metacontroller within a Kubernetes cluster. A
 }
 ```
 
-### Component Synchronization Response
+### Resource Synchronization Response
 
 ```json
 {
   "status": {
-    "id": "my-service/component::123456789",
-    "ownerId": "team-my-service::123456789",
-    "metricAssociation": [
-      {
-        "metricName": "instrumentation-check",
-        "metricId": "instrumentation-check/metric::123456789",
-        "metricSourceId": "my-service-instrumentation-check/metricSource:::123456789"
-      }
-    ]
+    "id": "my-resource::123456789",
+    "synchronized": true
   },
   "children": []
-}
-```
-
-### Metric Synchronization Response
-
-```json
-{
-  "status": {
-    "id": "observability-documentation/metric::123456789",
-    "cronJob": "Created"
-  },
-  "children": [
-    {
-      "apiVersion": "batch/v1",
-      "kind": "CronJob",
-      "metadata": {
-        "name": "observability-documentation-evaluator",
-        "namespace": "catalog-controller"
-      },
-      "spec": {
-        "schedule": "0 * * * *",
-        "jobTemplate": {
-          "spec": {
-            "template": {
-              "spec": {
-                "containers": [
-                  {
-                    "name": "compute-caller",
-                    "image": "alpine/curl",
-                    "command": [
-                      "/bin/sh",
-                      "-c",
-                      "curl -X POST metric-evaluation-service/evaluate/observability-documentation -H 'Content-Type: application/json' -d '{\"spec\": {}}'"
-                    ]
-                  }
-                ],
-                "restartPolicy": "Never"
-              }
-            }
-          }
-        }
-      }
-    }
-  ]
 }
 ```
 
@@ -325,7 +291,6 @@ The API uses standard HTTP status codes:
 | Status Code | Description |
 |-------------|-------------|
 | 200 | Success |
-| 400 | Bad Request - Invalid input parameters |
 | 422 | Validation Error - Request body validation failed |
 | 500 | Internal Server Error - Processing failed |
 

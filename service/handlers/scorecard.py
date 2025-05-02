@@ -1,4 +1,4 @@
-import logging
+from service.utils.log import get_logger
 import traceback
 from typing import List, Dict, Any, Tuple, Optional
 
@@ -6,7 +6,7 @@ from service.models.models import MetacontrollerRequest, SyncResponse
 from service.utils.compass import CompassAPI
 from kubernetes import client, config
 
-logger = logging.getLogger("ScorecardHandler")
+logger = get_logger("ScorecardHandler")
 
 
 async def sync_scorecard(request_data: MetacontrollerRequest):
@@ -19,7 +19,7 @@ async def sync_scorecard(request_data: MetacontrollerRequest):
 
         if parent.get('status', {}).get('id'):
             scorecard_id = parent['status']['id']
-            logger.info(f"Found existing ID {scorecard_id} for scorecard {scorecard_name}")
+            logger.debug(f"Found existing ID {scorecard_id} for scorecard {scorecard_name}")
             response = await compass_client.dummy_call("get", "scorecard", parent)
 
             if response['status_code'] == 200:
@@ -36,19 +36,16 @@ async def sync_scorecard(request_data: MetacontrollerRequest):
             else:
                 logger.error(f"Failed to retrieve scorecard {scorecard_name}. Status code: {response['status_code']}")
         else:
-            logger.info(f"No ID found for scorecard {scorecard_name}. Creating new.")
+            logger.debug(f"No ID found for scorecard {scorecard_name}. Creating new.")
             response_status["id"] = await create_scorecard(compass_client, parent, scorecard_name)
 
         if response_status["id"]:
-            metrics_summary, metric_associations = await validate_metrics(parent)
-            response_status["metricsSummary"] = metrics_summary
-            response_status["metricAssociation"] = metric_associations
+            response_status["metricsSummary"], response_status["metricAssociation"] = await validate_metrics(parent)
 
         return SyncResponse(status=response_status, children=[]).model_dump(by_alias=True), 200
 
     except Exception as e:
-        stack_trace = traceback.format_exc()
-        logger.error(f"Error syncing scorecard {parent['metadata']['name']}: {str(e)}\nStack trace:\n{stack_trace}")
+        logger.error(f"Error SyncScoreCard {parent['metadata']['name']}: {str(e)}\nStack trace:\n{traceback.format_exc()}")
         return SyncResponse(status={"error": str(e)}, children=[]).model_dump(by_alias=True), 500
 
 
@@ -56,39 +53,27 @@ async def create_scorecard(compass_client, parent, scorecard_name):
     try:
         response = await compass_client.dummy_call("create", "scorecard", parent)
         if response['status_code'] == 201:
-            logger.info(f"Created new scorecard {scorecard_name} with ID: {response.get('id')}")
-            return response.get('id')
+            logger.debug(f"Created new scorecard {scorecard_name} with ID: {response.get('id')}")
+            return response.get('id', None)
         else:
             logger.error(f"Failed to create scorecard {scorecard_name}. Status code: {response['status_code']}")
             return None
     except Exception as e:
-        stack_trace = traceback.format_exc()
-        logger.error(f"Exception in create_scorecard for {scorecard_name}: {str(e)}\nStack trace:\n{stack_trace}")
+        logger.error(f"Exception CreateScoreCard: {scorecard_name}: {str(e)}\nStack trace:\n{traceback.format_exc()}")
         raise
 
 
 async def validate_metrics(parent: Dict[str, Any]) -> Tuple[str, List[Dict[str, str]]]:
-    """
-    Validates metrics mentioned in scorecard criteria and returns a comma-separated list
-    of metrics with validity indicators and their associations.
-    """
     try:
-        # Load k8s configuration
         config.load_incluster_config()
         custom_api = client.CustomObjectsApi()
 
-        # Extract metric names from criteria
-        criteria = parent.get('spec', {}).get('criteria', [])
-        metric_names = []
+        metric_names, valid_metrics, invalid_metrics, metric_associations = [], [], [], []
 
-        for criterion in criteria:
+        for criterion in parent.get('spec', {}).get('criteria', []):
             has_metric = criterion.get('hasMetricValue', {})
             if has_metric and 'metricName' in has_metric:
                 metric_names.append(has_metric['metricName'])
-
-        valid_metrics = []
-        invalid_metrics = []
-        metric_associations = []
 
         for metric_name in metric_names:
             try:

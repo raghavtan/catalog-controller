@@ -1,10 +1,10 @@
-import logging
 import traceback
 
+from service.utils.log import get_logger
 from service.models.models import MetacontrollerRequest, FinalizeResponse
 from service.utils.compass import CompassAPI
 
-logger = logging.getLogger("FinalizeHandler")
+logger = get_logger("FinalizeHandler")
 
 
 async def finalize_resource(request_data: MetacontrollerRequest):
@@ -15,13 +15,13 @@ async def finalize_resource(request_data: MetacontrollerRequest):
         compass_id = parent["status"].get('id')
 
         if not compass_id:
-            logger.info(f"No Compass ID for {kind} {name}. Nothing to delete.")
+            logger.debug(f"No Compass ID for {kind} {name}. Nothing to delete.")
             return FinalizeResponse(finalized=True).model_dump(by_alias=True), 200
 
         delete_result = await CompassAPI().dummy_call("delete", kind, parent)
 
         if delete_result["success"]:
-            logger.info(f"{kind} {compass_id} deleted successfully from Compass.")
+            logger.debug(f"{kind} {compass_id} deleted successfully from Compass.")
             return FinalizeResponse(finalized=True).model_dump(by_alias=True), 200
 
         is_transient = delete_result.get("transient", False)

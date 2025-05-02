@@ -131,6 +131,8 @@ spec:
               type: object
               description: Represents the observed state of Metric.
               properties:
+                observedGeneration:
+                  type: integer
                 id:
                   type: string
                   nullable: true
