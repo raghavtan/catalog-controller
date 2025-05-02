@@ -15,10 +15,15 @@ endif
 # Virtual environment directory
 VENV := venv
 
-# Python commands
-PYTHON := $(VENV)/bin/python3
-PIP := $(VENV)/bin/pip
-PYTEST := $(VENV)/bin/pytest
+ifdef GITHUB_ACTIONS
+  PYTHON := python3
+  PIP := pip
+  PYTEST := pytest
+else
+  PYTHON := $(VENV)/bin/python3
+  PIP := $(VENV)/bin/pip
+  PYTEST := $(VENV)/bin/pytest
+endif
 
 # Docker image name
 IMAGE_NAME := catalog-controller

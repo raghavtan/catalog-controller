@@ -1,4 +1,3 @@
-import json
 from service.utils.log import get_logger
 import os
 
