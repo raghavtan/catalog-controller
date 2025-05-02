@@ -65,7 +65,9 @@
       "uid": "255fae90-cc6b-4b36-b329-b4d1c1353fc2"
     },
     "spec": {
-      "componentType": ["service"],
+      "componentType": [
+        "service"
+      ],
       "cronSchedule": "0 * * * *",
       "description": "https://github.com/motain/of-catalog/blob/main/docs/grading-system/observability.md#alert-routing-and-notifications",
       "evaluateOnDeploy": false,
@@ -88,7 +90,9 @@
             "header": "X-Honeycomb-Team",
             "tokenVar": "HONEYCOMB_API_KEY"
           },
-          "dependsOn": ["fetch-slos"],
+          "dependsOn": [
+            "fetch-slos"
+          ],
           "id": "fetch-alerts-for-slos",
           "jsonPath": ".[].id",
           "name": "Fetch alerts for SLOs",
@@ -102,7 +106,9 @@
             "header": "X-Honeycomb-Team",
             "tokenVar": "HONEYCOMB_API_KEY"
           },
-          "dependsOn": ["fetch-alerts-for-slos"],
+          "dependsOn": [
+            "fetch-alerts-for-slos"
+          ],
           "id": "fetch-recipients-for-alerts",
           "jsonPath": ".recipients[].target",
           "name": "Fetch recipients for Alerts",
@@ -112,7 +118,9 @@
           "uri": "https://api.eu1.honeycomb.io/1/burn_alerts/${Metadata.Name}/:alert_id"
         },
         {
-          "dependsOn": ["fetch-recipients-for-alerts"],
+          "dependsOn": [
+            "fetch-recipients-for-alerts"
+          ],
           "id": "validate-each-target-is-not-empty-string",
           "name": "Validate that each target is not an empty string",
           "pattern": "^\\S.*$",
@@ -120,7 +128,9 @@
           "type": "validate"
         },
         {
-          "dependsOn": ["validate-each-target-is-not-empty-string"],
+          "dependsOn": [
+            "validate-each-target-is-not-empty-string"
+          ],
           "id": "validate-all-targets-are-not-empty-strings",
           "method": "and",
           "name": "Validate that all targets are not empty strings",

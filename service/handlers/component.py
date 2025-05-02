@@ -11,29 +11,32 @@ logger = get_logger("ComponentHandler")
 
 async def sync_component(request_data: MetacontrollerRequest):
     parent = request_data.parent.model_dump(by_alias=True)
-
     component_name = parent['metadata']['name']
-    try:
-        response_status = {"id": None, "ownerId": None, "metricAssociation": []}
-        compass_client = CompassAPI()
 
-        if parent.get('status', {}).get('id'):
-            component_id = parent['status']['id']
+    try:
+        compass_client = CompassAPI()
+        response_status = {"id": None, "ownerId": None, "metricAssociation": []}
+        component_id = parent.get('status', {}).get('id')
+
+        if component_id:
             logger.debug(f"Found existing ID {component_id} for component {component_name}")
             response = await compass_client.dummy_call("get", "component", parent)
 
-            if response['status_code'] == 200:
+            if response['status_code'] == 200 and response.get('id') == component_id:
                 compass_id = response.get('id')
-                if compass_id:
-                    response_status["id"] = compass_id
-                    response_status["ownerId"] = response.get('ownerId')
-                    if compass_id != component_id:
-                        logger.warning(f"Component mismatch {component_name}. Exp: {component_id}, Act: {compass_id}")
-                else:
-                    logger.warning(f"Component {component_name} not found in Compass . Creating new resource.")
+                response_status["id"] = compass_id
+                response_status["ownerId"] = response.get('ownerId')
+                current_metrics = response.get('metricAssociation', [])
+                component_type_id = parent.get('spec', {}).get('typeId')
+                applicable_metrics = await get_applicable_metrics(component_type_id)
+
+                if not metrics_match(current_metrics, applicable_metrics):
+                    logger.debug(
+                        f"Metrics mismatch for component {component_name}. Recreating component with updated metrics.")
                     response_status = await create_component_with_metrics(compass_client, parent, component_name)
             else:
-                logger.error(f"Failed to retrieve component {component_name}. Status code: {response['status_code']}")
+                logger.debug(f"Component {component_name} not found in Compass or ID mismatch. Creating new resource.")
+                response_status = await create_component_with_metrics(compass_client, parent, component_name)
         else:
             logger.debug(f"No ID found for component {component_name}. Creating new.")
             response_status = await create_component_with_metrics(compass_client, parent, component_name)
@@ -42,8 +45,23 @@ async def sync_component(request_data: MetacontrollerRequest):
 
     except Exception as e:
         logger.error(
-            f"Error SyncComponent {parent['metadata']['name']}: {str(e)}\nStack trace:\n{traceback.format_exc()}")
+            f"Error SyncComponent {component_name}: {str(e)}\nStack trace:\n{traceback.format_exc()}")
         return SyncResponse(status={"error": str(e)}, children=[]).model_dump(by_alias=True), 500
+
+
+def metrics_match(current_metrics: List[Dict], applicable_metrics: List[Dict]) -> bool:
+    if len(current_metrics) != len(applicable_metrics):
+        return False
+
+    current_dict = {m.get('metricName'): m.get('metricId') for m in current_metrics if
+                    'metricName' in m and 'metricId' in m}
+    applicable_dict = {m.get('metricName'): m.get('metricId') for m in applicable_metrics if
+                       'metricName' in m and 'metricId' in m}
+    for name, metric_id in applicable_dict.items():
+        if name not in current_dict or current_dict[name] != metric_id:
+            return False
+
+    return True
 
 
 async def create_component_with_metrics(compass_client, parent, component_name):
@@ -54,7 +72,6 @@ async def create_component_with_metrics(compass_client, parent, component_name):
             return {"id": None, "ownerId": None, "metricAssociation": []}
 
         applicable_metrics = await get_applicable_metrics(component_type_id)
-
         request_data = {"component": parent, "metrics": applicable_metrics}
 
         response = await compass_client.dummy_call("create", "component_with_metrics", request_data)
@@ -126,22 +143,3 @@ async def get_applicable_metrics(component_type_id: str) -> List[Dict[str, str]]
     except Exception as e:
         logger.error(f"Error getting applicable metrics: {str(e)}")
         return []
-
-
-async def update_component(compass_client, parent, component_name):
-    try:
-        response = await compass_client.dummy_call("update", "component", parent)
-        if response['status_code'] == 200:
-            logger.debug(f"Updated component {component_name} with ID: {response.get('id')}")
-            return {
-                "id": response.get('id'),
-                "ownerId": response.get('ownerId'),
-                "metricAssociation": response.get('metricAssociation', [])
-            }
-        else:
-            logger.error(f"Failed to update component {component_name}. Status code: {response['status_code']}")
-            return None
-    except Exception as e:
-        logger.error(
-            f"Exception UpdateComponent for {component_name}: {str(e)}\nStack trace:\n{traceback.format_exc()}")
-        raise

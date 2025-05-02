@@ -14,6 +14,7 @@ async def sync_metric(request_data: MetacontrollerRequest):
     metric_name = parent['metadata']['name']
     try:
         response_status = {"id": None, "cronJob": None}
+        desired_children = []
         compass_client = CompassAPI()
 
         if parent.get('status', {}).get('id'):
@@ -33,13 +34,15 @@ async def sync_metric(request_data: MetacontrollerRequest):
                         f"Metric {metric_name} not found in Compass despite having ID. Creating new resource.")
                     response_status["id"] = await create_metric(compass_client, parent, metric_name)
             else:
-                logger.error(f"Failed to retrieve metric {metric_name}. Status code: {response['status_code']}")
+                response_status["id"] = await create_metric(compass_client, parent, metric_name)
+                logger.warning(f"Failed to retrieve metric {metric_name}. Status code: {response['status_code']}")
         else:
             logger.debug(f"No ID found for metric {metric_name}. Creating new.")
             response_status["id"] = await create_metric(compass_client, parent, metric_name)
 
-        desired_children, response_status["cronJob"] = build_metric_evaluator_cronjob(parent)
-        logger.debug(f"CronJob processing result for {metric_name}: {response_status["cronJob"]}")
+        if response_status["id"]:
+            desired_children, response_status["cronJob"] = build_metric_evaluator_cronjob(parent)
+            logger.debug(f"CronJob processing result for {metric_name}: {response_status["cronJob"]}")
 
         return SyncResponse(status=response_status, children=desired_children).model_dump(by_alias=True), 200
     except Exception as e:
@@ -52,7 +55,7 @@ async def create_metric(compass_client, parent, metric_name):
     try:
         response = await compass_client.dummy_call("create", "metric", parent)
         if response['status_code'] == 201:
-            logger.debug(f"Created new metric {metric_name} with ID: {response.get('id')}")
+            logger.info(f"Created new metric {metric_name} with ID: {response.get('id')}")
             return response.get('id')
         else:
             logger.error(f"Failed to create metric {metric_name}. Status code: {response['status_code']}")

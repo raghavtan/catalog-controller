@@ -55,7 +55,9 @@
       "uid": "6c179eb2-71bb-4cd6-af71-aac306ed2ce0"
     },
     "spec": {
-      "componentTypeIds": ["SERVICE"],
+      "componentTypeIds": [
+        "SERVICE"
+      ],
       "criteria": [
         {
           "hasMetricValue": {

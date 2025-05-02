@@ -1,10 +1,9 @@
-import unittest
-import json
 import os
 import sys
+import unittest
+from unittest.mock import patch
+
 import yaml
-import hashlib
-from unittest.mock import patch, mock_open
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
@@ -26,7 +25,6 @@ class TestBuildMetricEvaluatorCronJob(unittest.TestCase):
             self.expected_cronjob = yaml.safe_load(self.expected_cronjob_yaml)
 
     def test_build_metric_evaluator_cronjob(self):
-
         cronjobs, status = build_metric_evaluator_cronjob(self.metric)
 
         # Verify the status
@@ -46,7 +44,6 @@ class TestBuildMetricEvaluatorCronJob(unittest.TestCase):
             yaml.dump(self.expected_cronjob, f)
 
         self.assertDictEqual(generated_cronjob, self.expected_cronjob)
-
 
     def test_build_metric_evaluator_cronjob_no_schedule(self):
         metric_no_schedule = self.metric.copy()
