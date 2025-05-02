@@ -34,6 +34,9 @@ async def sync_component(request_data: MetacontrollerRequest):
                     logger.debug(
                         f"Metrics mismatch for component {component_name}. Recreating component with updated metrics.")
                     response_status = await create_component_with_metrics(compass_client, parent, component_name)
+                else:
+                    logger.debug(f"Metrics match for component {component_name}. Using existing metrics.")
+                    response_status["metricAssociation"] = current_metrics 
             else:
                 logger.debug(f"Component {component_name} not found in Compass or ID mismatch. Creating new resource.")
                 response_status = await create_component_with_metrics(compass_client, parent, component_name)
