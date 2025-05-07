@@ -31,10 +31,6 @@ spec:
                 description:
                   type: string
                   description: A detailed description of the component.
-                configVersion:
-                  type: integer
-                  format: int32
-                  description: Version number for the component's configuration.
                 typeId:
                   type: string
                   # Assuming specific values, add more if needed
@@ -45,6 +41,10 @@ spec:
                   items:
                     type: string
                   description: List of other component names this component depends on.
+                ownerId:
+                  type: string
+                  description: The identifier of the owning team or entity.
+                  nullable: true
                 fields:
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
@@ -98,9 +98,6 @@ spec:
                 id:
                   type: string
                   description: The unique identifier assigned to the component (e.g., by an external system like Compass).
-                ownerId:
-                  type: string
-                  description: The identifier of the owning team or entity.
                 metricAssociation:
                   type: array
                   description: Association between metric names and their unique identifiers.

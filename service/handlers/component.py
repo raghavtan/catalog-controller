@@ -15,7 +15,7 @@ async def sync_component(request_data: MetacontrollerRequest):
 
     try:
         compass_client = CompassAPI()
-        response_status = {"id": None, "ownerId": None, "metricAssociation": []}
+        response_status = {"id": None, "metricAssociation": []}
         component_id = parent.get('status', {}).get('id')
 
         if component_id:
@@ -25,7 +25,6 @@ async def sync_component(request_data: MetacontrollerRequest):
             if response['status_code'] == 200 and response.get('id') == component_id:
                 compass_id = response.get('id')
                 response_status["id"] = compass_id
-                response_status["ownerId"] = response.get('ownerId')
                 current_metrics = response.get('metricAssociation', [])
                 component_type_id = parent.get('spec', {}).get('typeId')
                 applicable_metrics = await get_applicable_metrics(component_type_id)
@@ -72,17 +71,17 @@ async def create_component_with_metrics(compass_client, parent, component_name):
         component_type_id = parent.get('spec', {}).get('typeId')
         if not component_type_id:
             logger.error(f"Missing typeId for component {component_name}")
-            return {"id": None, "ownerId": None, "metricAssociation": []}
+            return {"id": None, "metricAssociation": []}
 
         applicable_metrics = await get_applicable_metrics(component_type_id)
         request_data = {"component": parent, "metrics": applicable_metrics}
 
-        response = await compass_client.dummy_call("create", "component_with_metrics", request_data)
+        response = await compass_client.dummy_call("create", "component", request_data)
 
         if response['status_code'] == 201:
             logger.debug(f"Created new component {component_name} with ID: {response.get('id')}")
 
-            result = {"id": response.get('id'), "ownerId": response.get('ownerId'), "metricAssociation": []}
+            result = {"id": response.get('id'), "metricAssociation": []}
 
             if 'metricSources' in response:
                 for metric_source in response['metricSources']:
@@ -95,7 +94,7 @@ async def create_component_with_metrics(compass_client, parent, component_name):
             return result
         else:
             logger.error(f"Failed to create component {component_name}. Status code: {response['status_code']}")
-            return {"id": None, "ownerId": None, "metricAssociation": []}
+            return {"id": None, "metricAssociation": []}
 
     except Exception as e:
         stack_trace = traceback.format_exc()

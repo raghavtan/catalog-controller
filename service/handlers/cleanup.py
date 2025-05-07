@@ -24,10 +24,7 @@ async def finalize_resource(request_data: MetacontrollerRequest):
             logger.debug(f"{kind} {compass_id} deleted successfully from Compass.")
             return FinalizeResponse(finalized=True).model_dump(by_alias=True), 200
 
-        is_transient = delete_result.get("transient", False)
-        log_func = logger.warning if is_transient else logger.error
-        error_type = "Transient" if is_transient else "Persistent"
-        log_func(f"{error_type} error finalizing {kind} {name}: {delete_result.get('message')}")
+        logger.error(f"Finalize Failed {kind} {name}. {delete_result.get('status_code'), delete_result.get('message')}")
 
         return FinalizeResponse(finalized=False).model_dump(by_alias=True), 500
     except Exception as e:

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 class KubernetesMetadata(BaseModel):
     name: str
     namespace: Optional[str] = None
-    uid: str
+    uid: str = None
     resourceVersion: str = None
     generation: int = None
     creationTimestamp: Optional[datetime] = None

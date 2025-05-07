@@ -294,3 +294,33 @@ def test_build_metric_evaluator_cronjob_direct():
         assert children[0]["metadata"]["name"] == "test-metric-evaluator"
     else:
         assert len(children) == 0
+
+
+@pytest.mark.asyncio
+async def test_sync_metric_response_without_id(metric_request, compass_success_response):
+    """Test syncing a metric when the response is successful but doesn't contain an ID"""
+    # Create a success response without an ID field
+    response_without_id = compass_success_response.copy()
+    response_without_id.pop("id", None)  # Remove the ID from the response
+
+    with patch.object(CompassAPI, 'dummy_call', new_callable=AsyncMock) as mock_call:
+        mock_call.side_effect = [
+            response_without_id,  # First call returns a successful response without ID
+            {"status_code": 201, "id": "alert-routing-and-notifications/metric::new-created-id"}
+            # Second call creates a new metric
+        ]
+
+        # Call the function
+        response, status_code = await sync_metric(metric_request)
+
+        # Assert the result
+        assert status_code == 200
+        assert response["status"]["id"] == "alert-routing-and-notifications/metric::new-created-id"
+        assert response["status"]["cronJob"] is not None
+
+        # Verify API calls - should be called twice: once to get and once to create
+        assert mock_call.call_count == 2
+        # First call should be a get
+        assert mock_call.call_args_list[0][0][0] == "get"
+        # Second call should be a create
+        assert mock_call.call_args_list[1][0][0] == "create"

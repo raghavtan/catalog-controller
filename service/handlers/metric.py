@@ -27,11 +27,9 @@ async def sync_metric(request_data: MetacontrollerRequest):
                 if compass_id:
                     response_status["id"] = compass_id
                     if compass_id != metric_id:
-                        logger.warning(
-                            f"Metric ID mismatch for {metric_name}. Expected: {metric_id}, Found: {compass_id}")
+                        logger.warning(f"Metric ID mismatch for {metric_name}. Expected: {metric_id}, Found: {compass_id}")
                 else:
-                    logger.warning(
-                        f"Metric {metric_name} not found in Compass despite having ID. Creating new resource.")
+                    logger.warning(f"Metric {metric_name} not found in Compass despite having ID. Creating new resource.")
                     response_status["id"] = await create_metric(compass_client, parent, metric_name)
             else:
                 response_status["id"] = await create_metric(compass_client, parent, metric_name)

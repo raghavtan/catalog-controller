@@ -39,7 +39,7 @@ class CompassAPI:
             return response.json()
 
     async def dummy_call(self, operation: str, resource_kind: str, resource_data: dict) -> dict:
-        if resource_kind != "component_with_metrics":
+        if resource_kind != "component":
             resource_name = resource_data['metadata']['name']
             logger.debug(f"Dummy call to {operation} {resource_kind} for {resource_name}")
         else:
@@ -76,7 +76,6 @@ class CompassAPI:
                     "message": "Component with metrics created successfully",
                     "success": True,
                     "id": f"{component_name}/component::123456789",
-                    "ownerId": f"team-{component_name}::123456789",
                     "metricSources": metric_sources
                 }
             else:
@@ -93,8 +92,7 @@ class CompassAPI:
                     "status_code": 200,
                     "message": "Resource updated successfully",
                     "success": True,
-                    "id": f"{resource_name}/component::123456789",
-                    "ownerId": f"team-{resource_name}::123456789"
+                    "id": f"{resource_name}/component::123456789"
                 }
             else:
                 return {
@@ -112,7 +110,6 @@ class CompassAPI:
                     "message": "Resource fetched successfully",
                     "success": True,
                     "id": f"{resource_name}/component::123456789",
-                    "ownerId": f"team-{resource_name}::123456789",
                     "metricAssociation": metric_associations
                 }
             else:

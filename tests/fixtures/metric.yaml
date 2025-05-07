@@ -1,46 +1,64 @@
 apiVersion: catalog.onefootball.com/v1alpha1
 kind: Metric
 metadata:
-  finalizers:
-    - metacontroller.io/compositecontroller-metrics-controller
   labels:
     argocd.argoproj.io/instance: catalog-controller-prod-131-01
-  name: adaptive-systems
+  name: alert-routing-and-notifications
 spec:
   componentType:
-    - service
-    - cloud-resource
+  - service
   cronSchedule: 0 * * * *
-  description: https://github.com/motain/of-catalog/blob/main/docs/grading-system/resiliency.md#adaptive-systems
+  description: https://github.com/motain/of-catalog/blob/main/docs/grading-system/observability.md#alert-routing-and-notifications
   evaluateOnDeploy: false
   facts:
-    - auth: null
-      filePath: app.toml
-      id: app-toml-replicas-min
-      jsonPath: .service.replicas_min // .service.production.replicas_min | . >= 3
-      name: Minimum replicas always greater than 3 to ensure cross AZ availability
-      repo: ${Metadata.Name}
-      rule: jsonpath
-      source: github
-      type: extract
-    - auth: null
-      filePath: app.toml
-      id: app-toml-replicas-max-gt-replicas-min
-      jsonPath: (.service.replicas_min // .service.production.replicas_min) < (.service.replicas_max
-        // .service.production.replicas_max)
-      name: Minimum replicas always less than maximum replicas
-      repo: ${Metadata.Name}
-      rule: jsonpath
-      source: github
-      type: extract
-    - dependsOn:
-        - app-toml-replicas-min
-        - app-toml-replicas-max-gt-replicas-min
-      id: cpu-and-memory-hpa-are-set
-      method: and
-      name: Validate that CPU and Memory Horizontal Pod Autoscalers are set
-      type: aggregate
+  - auth:
+      header: X-Honeycomb-Team
+      tokenVar: HONEYCOMB_API_KEY
+    id: fetch-slos
+    jsonPath: .[].id
+    name: Fetch SLOs
+    rule: jsonpath
+    source: jsonapi
+    type: extract
+    uri: https://api.eu1.honeycomb.io/1/slos/${Metadata.Name}
+  - auth:
+      header: X-Honeycomb-Team
+      tokenVar: HONEYCOMB_API_KEY
+    dependsOn:
+    - fetch-slos
+    id: fetch-alerts-for-slos
+    jsonPath: .[].id
+    name: Fetch alerts for SLOs
+    rule: jsonpath
+    source: jsonapi
+    type: extract
+    uri: https://api.eu1.honeycomb.io/1/burn_alerts/${Metadata.Name}?slo_id=:slo_id
+  - auth:
+      header: X-Honeycomb-Team
+      tokenVar: HONEYCOMB_API_KEY
+    dependsOn:
+    - fetch-alerts-for-slos
+    id: fetch-recipients-for-alerts
+    jsonPath: .recipients[].target
+    name: Fetch recipients for Alerts
+    rule: jsonpath
+    source: jsonapi
+    type: extract
+    uri: https://api.eu1.honeycomb.io/1/burn_alerts/${Metadata.Name}/:alert_id
+  - dependsOn:
+    - fetch-recipients-for-alerts
+    id: validate-each-target-is-not-empty-string
+    name: Validate that each target is not an empty string
+    pattern: ^\S.*$
+    rule: regex_match
+    type: validate
+  - dependsOn:
+    - validate-each-target-is-not-empty-string
+    id: validate-all-targets-are-not-empty-strings
+    method: and
+    name: Validate that all targets are not empty strings
+    type: aggregate
   format:
-    unit: Adaptive Systems
-  grading-system: resiliency
-  name: adaptive-systems
+    unit: Critical Alerts/SLO Check
+  grading-system: observability
+  name: alert-routing-and-notifications
