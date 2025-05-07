@@ -55,7 +55,7 @@ class CompassAPI:
             }
 
         elif operation == "create":
-            if resource_kind == "component_with_metrics":
+            if resource_kind == "component":
                 component_data = resource_data.get('component', {})
                 metrics_data = resource_data.get('metrics', [])
                 component_name = component_data.get('metadata', {}).get('name', 'unknown')
