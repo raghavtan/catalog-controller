@@ -2,6 +2,7 @@ from service.utils.log import get_logger
 import os
 import json
 import httpx
+import urllib.parse
 
 logger = get_logger("CompassAPI")
 
@@ -14,10 +15,13 @@ class CompassAPI:
     async def get_by_id(self, resource_kind: str, resource_id: str) -> dict:
         """Get resource by Compass ID"""
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
-        request_url = f"{self.base_url}/{resource_kind}s/{resource_id}"
 
         try:
             async with httpx.AsyncClient() as client:
+                # request URL example
+                # http://compass-service.compass-service.svc.cluster.local/api/v1/metrics/ari:cloud:compass:fca6a80f-888b-4079-82e6-3c2f61c788e2:metric-definition/4d010f50-96c4-48c0-bab5-a3dd5112b464/295e70fa-9359-4a0f-9188-6f7b6a0dbd7e
+                encoded_id = urllib.parse.quote(resource_id, safe='')
+                request_url = f"{self.base_url}/{resource_kind}s/{encoded_id}"
                 response = await client.get(request_url, headers=headers)
 
                 if response.status_code == 200:
