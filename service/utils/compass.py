@@ -1,6 +1,6 @@
 from service.utils.log import get_logger
 import os
-
+import json
 import httpx
 
 logger = get_logger("CompassAPI")
@@ -9,122 +9,131 @@ logger = get_logger("CompassAPI")
 class CompassAPI:
     def __init__(self):
         self.host = os.getenv("COMPASS_SERVICE_ENDPOINT", "compass-service.compass.svc.cluster.local")
-        self.base_url = f"http://{self.host}"
+        self.base_url = f"http://{self.host}/api/v1"
 
-    async def call(self, operation: str, resource_kind: str, resource_data: dict) -> dict:
-
-        logger.debug(f"Calling Compass API: {operation} {resource_kind} for {resource_data['metadata']['name']}")
-        headers = {"Content-Type": "application/json","Accept": "application/json"}
-        request_url = f"{self.base_url}/{resource_kind}"
+    async def get_by_id(self, resource_kind: str, resource_id: str) -> dict:
+        """Get resource by Compass ID"""
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        request_url = f"{self.base_url}/{resource_kind}s/{resource_id}"
 
         try:
             async with httpx.AsyncClient() as client:
-                if operation == "delete":
-                    response = await client.delete(f"{request_url}/{resource_data['status']['id']}")
-                elif operation == "create":
-                    response = await client.post(request_url, data=resource_data, headers=headers)
-                elif operation == "update":
-                    response = await client.put(f"{request_url}/{resource_data['status']['id']}",
-                                                data=resource_data, headers=headers)
-                elif operation == "get":
-                    response = await client.get(f"{request_url}/{resource_data['status']['id']}")
+                response = await client.get(request_url, headers=headers)
 
-                response.raise_for_status()
-                return response.json()
+                if response.status_code == 200:
+                    return {"status_code": 200, **response.json()}
+                elif response.status_code == 404:
+                    return {"status_code": 404, "message": f"{resource_kind} not found"}
+                else:
+                    response.raise_for_status()
 
         except httpx.HTTPStatusError as e:
             logger.error(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
+            return {"status_code": e.response.status_code, "message": e.response.text}
+        except Exception as e:
+            logger.error(f"Error getting {resource_kind} by ID {resource_id}: {str(e)}")
+            return {"status_code": 500, "message": str(e)}
 
-        finally:
-            await client.aclose()
-            return response.json()
+    async def get_by_name(self, resource_kind: str, resource_name: str) -> dict:
+        """Get resource by name - for import functionality"""
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        request_url = f"{self.base_url}/{resource_kind}s/by-name/{resource_name}"
 
-    async def dummy_call(self, operation: str, resource_kind: str, resource_data: dict) -> dict:
-        if resource_kind != "component":
-            resource_name = resource_data['metadata']['name']
-            logger.debug(f"Dummy call to {operation} {resource_kind} for {resource_name}")
-        else:
-            component_data = resource_data.get('component', {})
-            resource_name = component_data.get('metadata', {}).get('name', 'unknown')
-            logger.debug(f"Dummy call to {operation} {resource_kind} for {resource_name}")
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(request_url, headers=headers)
 
-        if operation == "delete":
-            return {
-                "status_code": 200,
-                "message": "Resource deleted successfully",
-                "success": True
-            }
+                if response.status_code == 200:
+                    return {"status_code": 200, **response.json()}
+                elif response.status_code == 404:
+                    return {"status_code": 404, "message": f"{resource_kind} with name {resource_name} not found"}
+                else:
+                    response.raise_for_status()
 
-        elif operation == "create":
-            if resource_kind == "component":
-                component_data = resource_data.get('component', {})
-                metrics_data = resource_data.get('metrics', [])
-                component_name = component_data.get('metadata', {}).get('name', 'unknown')
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
+            return {"status_code": e.response.status_code, "message": e.response.text}
+        except Exception as e:
+            logger.error(f"Error getting {resource_kind} by name {resource_name}: {str(e)}")
+            return {"status_code": 500, "message": str(e)}
 
-                metric_sources = []
-                for metric in metrics_data:
-                    metric_name = metric.get('metricName', 'unknown-metric')
-                    metric_id = metric.get('metricId', 'unknown-metric-id')
+    async def create(self, resource_kind: str, resource_data: dict) -> dict:
+        """Create new resource"""
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        request_url = f"{self.base_url}/{resource_kind}s"
 
-                    metric_sources.append({
-                        "metricName": metric_name,
-                        "metricId": metric_id,
-                        "metricSourceId": f"{component_name}-{metric_name}/metricSource:::123456789"
-                    })
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    request_url,
+                    json=resource_data,  # Use json parameter instead of data
+                    headers=headers
+                )
 
-                return {
-                    "status_code": 201,
-                    "message": "Component with metrics created successfully",
-                    "success": True,
-                    "id": f"{component_name}/component::123456789",
-                    "metricSources": metric_sources
-                }
-            else:
-                return {
-                    "status_code": 201,
-                    "message": "Resource created successfully",
-                    "success": True,
-                    "id": f"{resource_data['metadata']['name']}/{resource_kind}::123456789"
-                }
+                if response.status_code == 201:
+                    return {"status_code": 201, **response.json()}
+                else:
+                    response.raise_for_status()
 
-        elif operation == "update":
-            if resource_kind == "component":
-                return {
-                    "status_code": 200,
-                    "message": "Resource updated successfully",
-                    "success": True,
-                    "id": f"{resource_name}/component::123456789"
-                }
-            else:
-                return {
-                    "status_code": 200,
-                    "message": "Resource updated",
-                    "success": True
-                }
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
+            return {"status_code": e.response.status_code, "message": e.response.text}
+        except Exception as e:
+            logger.error(f"Error creating {resource_kind}: {str(e)}")
+            return {"status_code": 500, "message": str(e)}
 
-        elif operation == "get":
-            if resource_kind == "component":
-                metric_associations = resource_data.get('status', {}).get('metricAssociation', [])
+    async def update(self, resource_kind: str, resource_id: str, resource_data: dict) -> dict:
+        """Update existing resource"""
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        request_url = f"{self.base_url}/{resource_kind}s/{resource_id}"
 
-                return {
-                    "status_code": 200,
-                    "message": "Resource fetched successfully",
-                    "success": True,
-                    "id": f"{resource_name}/component::123456789",
-                    "metricAssociation": metric_associations
-                }
-            else:
-                return {
-                    "status_code": 200,
-                    "message": "Resource fetched successfully",
-                    "success": True,
-                    "id": f"{resource_data['metadata']['name']}/{resource_kind}::123456789"
-                }
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.put(
+                    request_url,
+                    json=resource_data,  # Use json parameter instead of data
+                    headers=headers
+                )
 
-        else:
-            logger.warning(f"Unsupported operation: {operation}")
-            return {
-                "status_code": 400,
-                "message": f"Unsupported operation: {operation}",
-                "success": False
-            }
+                if response.status_code == 200:
+                    return {"status_code": 200, **response.json()}
+                else:
+                    response.raise_for_status()
+
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
+            return {"status_code": e.response.status_code, "message": e.response.text}
+        except Exception as e:
+            logger.error(f"Error updating {resource_kind} {resource_id}: {str(e)}")
+            return {"status_code": 500, "message": str(e)}
+
+    async def delete(self, resource_kind: str, resource_id: str) -> dict:
+        """Delete resource"""
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        request_url = f"{self.base_url}/{resource_kind}s/{resource_id}"
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.delete(request_url, headers=headers)
+
+                return {"status_code": response.status_code}
+
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
+            return {"status_code": e.response.status_code, "message": e.response.text}
+        except Exception as e:
+            logger.error(f"Error deleting {resource_kind} {resource_id}: {str(e)}")
+            return {"status_code": 500, "message": str(e)}
+
+    def has_spec_differences(self, k8s_resource: dict, compass_resource: dict) -> bool:
+        """Compare K8s resource spec with Compass resource to detect differences"""
+        try:
+            k8s_spec = k8s_resource.get('spec', {})
+            compass_spec = compass_resource.get('spec', {})
+
+            # Simple comparison - can be enhanced based on specific fields to compare
+            return k8s_spec != compass_spec
+
+        except Exception as e:
+            logger.error(f"Error comparing specs: {str(e)}")
+            return True  # Assume differences if comparison fails

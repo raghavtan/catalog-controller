@@ -16,42 +16,88 @@ async def sync_component(request_data: MetacontrollerRequest):
     try:
         compass_client = CompassAPI()
         response_status = {"id": None, "metricAssociation": []}
-        component_id = parent.get('status', {}).get('id')
+        compass_id = await ensure_component_exists(compass_client, parent, component_name)
 
-        if component_id:
-            logger.debug(f"Found existing ID {component_id} for component {component_name}")
-            response = await compass_client.dummy_call("get", "component", parent)
+        if not compass_id:
+            logger.error(f"Failed to ensure component {component_name} exists")
+            return SyncResponse(status={"error": "Failed to create or import component"}, children=[]).model_dump(
+                by_alias=True), 500
 
-            if response['status_code'] == 200 and response.get('id') == component_id:
-                compass_id = response.get('id')
-                response_status["id"] = compass_id
-                current_metrics = response.get('metricAssociation', [])
-                component_type_id = parent.get('spec', {}).get('typeId')
-                applicable_metrics = await get_applicable_metrics(component_type_id)
+        current_component = await compass_client.get_by_id("component", compass_id)
 
-                if not metrics_match(current_metrics, applicable_metrics):
-                    logger.debug(
-                        f"Metrics mismatch for component {component_name}. Recreating component with updated metrics.")
-                    response_status = await create_component_with_metrics(compass_client, parent, component_name)
-                else:
-                    logger.debug(f"Metrics match for component {component_name}. Using existing metrics.")
-                    response_status["metricAssociation"] = current_metrics 
-            else:
-                logger.debug(f"Component {component_name} not found in Compass or ID mismatch. Creating new resource.")
-                response_status = await create_component_with_metrics(compass_client, parent, component_name)
-        else:
-            logger.debug(f"No ID found for component {component_name}. Creating new.")
+        if current_component['status_code'] != 200:
+            logger.error(f"Failed to retrieve component {component_name} after creation/import")
+            return SyncResponse(status={"error": "Failed to retrieve component"}, children=[]).model_dump(
+                by_alias=True), 500
+
+        if compass_client.has_spec_differences(parent, current_component):
+            logger.info(f"Spec differences detected for component {component_name}. Updating...")
+            update_response = await compass_client.update("component", compass_id, parent)
+
+            if update_response['status_code'] != 200:
+                logger.error(f"Failed to update component {component_name}")
+                return SyncResponse(status={"error": "Failed to update component"}, children=[]).model_dump(
+                    by_alias=True), 500
+
+            current_component = update_response
+
+        response_status["id"] = compass_id
+        current_metrics = current_component.get('metricAssociation', [])
+        component_type_id = parent.get('spec', {}).get('typeId')
+        applicable_metrics = await get_applicable_metrics(component_type_id)
+
+        if not metrics_match(current_metrics, applicable_metrics):
+            logger.debug(f"Metrics mismatch for component {component_name}. Recreating component with updated metrics.")
             response_status = await create_component_with_metrics(compass_client, parent, component_name)
+        else:
+            logger.debug(f"Metrics match for component {component_name}. Using existing metrics.")
+            response_status["metricAssociation"] = current_metrics
 
         return SyncResponse(status=response_status, children=[]).model_dump(by_alias=True), 200
 
     except Exception as e:
-        logger.error(
-            f"Error SyncComponent {component_name}: {str(e)}\nStack trace:\n{traceback.format_exc()}")
+        logger.error(f"Error SyncComponent {component_name}: {str(e)}\nStack trace:\n{traceback.format_exc()}")
         return SyncResponse(status={"error": str(e)}, children=[]).model_dump(by_alias=True), 500
 
 
+async def ensure_component_exists(compass_client: CompassAPI, parent: dict, component_name: str) -> str:
+    """
+    Ensure component exists in Compass. Try import by name if no status ID, otherwise validate existing ID.
+    Returns compass_id or None if failed.
+    """
+    try:
+        status_id = parent.get('status', {}).get('id')
+
+        if status_id:
+            logger.debug(f"Found existing ID {status_id} for component {component_name}")
+            response = await compass_client.get_by_id("component", status_id)
+
+            if response['status_code'] == 200:
+                logger.debug(f"Component {component_name} exists in Compass with ID {status_id}")
+                return status_id
+            else:
+                logger.warning(
+                    f"Component {component_name} with ID {status_id} not found in Compass. Will try import by name.")
+
+        logger.debug(f"Attempting to import component {component_name} by name")
+        import_response = await compass_client.get_by_name("component", component_name)
+
+        if import_response['status_code'] == 200:
+            imported_id = import_response.get('id')
+            logger.info(f"Successfully imported existing component {component_name} with ID {imported_id}")
+            return imported_id
+
+        logger.debug(f"Component {component_name} not found in Compass. Creating new component.")
+        create_response = await create_component_with_metrics(compass_client, parent, component_name)
+        return create_response.get('id')
+
+    except Exception as e:
+        logger.error(f"Error ensuring component {component_name} exists: {str(e)}")
+        return None
+
+
 def metrics_match(current_metrics: List[Dict], applicable_metrics: List[Dict]) -> bool:
+    """Compare current metrics with applicable metrics"""
     if len(current_metrics) != len(applicable_metrics):
         return False
 
@@ -59,6 +105,7 @@ def metrics_match(current_metrics: List[Dict], applicable_metrics: List[Dict]) -
                     'metricName' in m and 'metricId' in m}
     applicable_dict = {m.get('metricName'): m.get('metricId') for m in applicable_metrics if
                        'metricName' in m and 'metricId' in m}
+
     for name, metric_id in applicable_dict.items():
         if name not in current_dict or current_dict[name] != metric_id:
             return False
@@ -67,6 +114,7 @@ def metrics_match(current_metrics: List[Dict], applicable_metrics: List[Dict]) -
 
 
 async def create_component_with_metrics(compass_client, parent, component_name):
+    """Create component with associated metrics"""
     try:
         component_type_id = parent.get('spec', {}).get('typeId')
         if not component_type_id:
@@ -76,10 +124,10 @@ async def create_component_with_metrics(compass_client, parent, component_name):
         applicable_metrics = await get_applicable_metrics(component_type_id)
         request_data = {"component": parent, "metrics": applicable_metrics}
 
-        response = await compass_client.dummy_call("create", "component", request_data)
+        response = await compass_client.create("component", request_data)
 
         if response['status_code'] == 201:
-            logger.debug(f"Created new component {component_name} with ID: {response.get('id')}")
+            logger.info(f"Created new component {component_name} with ID: {response.get('id')}")
 
             result = {"id": response.get('id'), "metricAssociation": []}
 
@@ -104,6 +152,7 @@ async def create_component_with_metrics(compass_client, parent, component_name):
 
 
 async def get_applicable_metrics(component_type_id: str) -> List[Dict[str, str]]:
+    """Get metrics applicable to this component type from scorecards"""
     try:
         config.load_incluster_config()
         custom_api = client.CustomObjectsApi()

@@ -4,19 +4,19 @@ graph TB
         START[Controller Triggered] --> CHECK_STATUS{Status ID exists?}
         
         %% Branch 1: No Status ID - Check if exists by name
-        CHECK_STATUS -->|No| CHECK_BY_NAME[GET /resource/by-name/{name}]
+        CHECK_STATUS -->|No| CHECK_BY_NAME[/"GET /resource/by-name/{name}"/]
         CHECK_BY_NAME --> NAME_EXISTS{Resource exists<br/>by name?}
         NAME_EXISTS -->|Yes| IMPORT_ID[Import ID to K8s status]
         NAME_EXISTS -->|No| CREATE_NEW[POST /resource - Create New]
         
         %% Branch 2: Status ID exists - Validate and check for updates
-        CHECK_STATUS -->|Yes| GET_BY_ID[GET /resource/{id}]
+        CHECK_STATUS -->|Yes| GET_BY_ID["GET /resource/{id}"]
         GET_BY_ID --> ID_EXISTS{Resource exists<br/>by ID?}
         ID_EXISTS -->|No| CHECK_BY_NAME
         ID_EXISTS -->|Yes| COMPARE_SPEC{Spec differences<br/>detected?}
         
         %% Update flow
-        COMPARE_SPEC -->|Yes| UPDATE_RESOURCE[PUT /resource/{id}]
+        COMPARE_SPEC -->|Yes| UPDATE_RESOURCE["PUT /resource/{id}"]
         COMPARE_SPEC -->|No| SYNC_ASSOCIATIONS[Sync metric associations]
         
         %% Convergence points
