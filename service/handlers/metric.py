@@ -31,7 +31,7 @@ async def sync_metric(request_data: MetacontrollerRequest):
             return SyncResponse(status={"error": "Failed to retrieve metric"}, children=[]).model_dump(
                 by_alias=True), 500
 
-        if metric_spec_differences(parent, current_metric):
+        if await metric_spec_differences(parent, current_metric['data']):
             logger.info(f"Spec differences detected for metric {metric_name}. Updating...")
             update_response = await compass_client.update("metric", compass_id, parent)
 
