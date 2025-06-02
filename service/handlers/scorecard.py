@@ -75,7 +75,7 @@ async def ensure_scorecard_exists(compass_client: CompassAPI, parent: dict, scor
         import_response = await compass_client.get_by_name("scorecard", scorecard_name)
 
         if import_response['status_code'] == 200:
-            imported_id = import_response.get('id')
+            imported_id = import_response['data'].get('id')
             logger.info(f"Successfully imported existing scorecard {scorecard_name} with ID {imported_id}")
             return imported_id
 
@@ -94,8 +94,8 @@ async def create_scorecard(compass_client, parent, scorecard_name):
         response = await compass_client.create("scorecard", parent)
 
         if response['status_code'] == 201:
-            logger.info(f"Created new scorecard {scorecard_name} with ID: {response.get('id')}")
-            return response.get('id')
+            logger.info(f"Created new scorecard {scorecard_name} with ID: {response['data'].get('id')}")
+            return response['data'].get('id')
         else:
             logger.error(f"Failed to create scorecard {scorecard_name}. Status code: {response['status_code']}")
             return None

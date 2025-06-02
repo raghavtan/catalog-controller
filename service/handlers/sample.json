@@ -1,0 +1,17 @@
+{
+  "statusCode": 200,
+  "message": "Operation completed successfully",
+  "data": {
+    "id": "ari:cloud:compass:fca6a80f-888b-4079-82e6-3c2f61c788e2:metric-definition/4d010f50-96c4-48c0-bab5-a3dd5112b464/295e70fa-9359-4a0f-9188-6f7b6a0dbd7e",
+    "name": "security-as-pipeline",
+    "spec": {
+      "name": "security-as-pipeline",
+      "description": "https://github.com/motain/of-catalog/blob/main/docs/grading-system/security.md#security-as-pipeline",
+      "format": {
+        "unit": ""
+      }
+    },
+    "unit": "",
+    "type": "CUSTOM"
+  }
+}

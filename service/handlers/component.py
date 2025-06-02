@@ -83,13 +83,13 @@ async def ensure_component_exists(compass_client: CompassAPI, parent: dict, comp
         import_response = await compass_client.get_by_name("component", component_name)
 
         if import_response['status_code'] == 200:
-            imported_id = import_response.get('id')
+            imported_id = import_response['data'].get('id')
             logger.info(f"Successfully imported existing component {component_name} with ID {imported_id}")
             return imported_id
 
         logger.debug(f"Component {component_name} not found in Compass. Creating new component.")
         create_response = await create_component_with_metrics(compass_client, parent, component_name)
-        return create_response.get('id')
+        return create_response['data'].get('id')
 
     except Exception as e:
         logger.error(f"Error ensuring component {component_name} exists: {str(e)}")
@@ -127,9 +127,9 @@ async def create_component_with_metrics(compass_client, parent, component_name):
         response = await compass_client.create("component", request_data)
 
         if response['status_code'] == 201:
-            logger.info(f"Created new component {component_name} with ID: {response.get('id')}")
+            logger.info(f"Created new component {component_name} with ID: {response['data'].get('id')}")
 
-            result = {"id": response.get('id'), "metricAssociation": []}
+            result = {"id": response['data'].get('id'), "metricAssociation": []}
 
             if 'metricSources' in response:
                 for metric_source in response['metricSources']:

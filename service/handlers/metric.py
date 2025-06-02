@@ -31,7 +31,7 @@ async def sync_metric(request_data: MetacontrollerRequest):
             return SyncResponse(status={"error": "Failed to retrieve metric"}, children=[]).model_dump(
                 by_alias=True), 500
 
-        if compass_client.has_spec_differences(parent, current_metric):
+        if metric_spec_differences(parent, current_metric):
             logger.info(f"Spec differences detected for metric {metric_name}. Updating...")
             update_response = await compass_client.update("metric", compass_id, parent)
 
@@ -77,7 +77,7 @@ async def ensure_metric_exists(compass_client: CompassAPI, parent: dict, metric_
         import_response = await compass_client.get_by_name("metric", metric_name)
 
         if import_response['status_code'] == 200:
-            imported_id = import_response.get('id')
+            imported_id = import_response['data'].get('id')
             logger.info(f"Successfully imported existing metric {metric_name} with ID {imported_id}")
             return imported_id
 
@@ -96,8 +96,8 @@ async def create_metric(compass_client, parent, metric_name):
         response = await compass_client.create("metric", parent)
 
         if response['status_code'] == 201:
-            logger.info(f"Created new metric {metric_name} with ID: {response.get('id')}")
-            return response.get('id')
+            logger.info(f"Created new metric {metric_name} with ID: {response['data'].get('id')}")
+            return response['data'].get('id')
         else:
             logger.error(f"Failed to create metric {metric_name}. Status code: {response['status_code']}")
             return None
@@ -106,3 +106,21 @@ async def create_metric(compass_client, parent, metric_name):
         stack_trace = traceback.format_exc()
         logger.error(f"Exception in create_metric for {metric_name}: {str(e)}\nStack trace:\n{stack_trace}")
         raise
+
+
+async def metric_spec_differences(k8s_resource, compass_resource):
+    k8s_resource_spec = k8s_resource.get('spec', {})
+    if not k8s_resource_spec:
+        logger.debug("K8s resource spec is empty or missing")
+        return False
+    compass_resource_spec = compass_resource.get('spec', {})
+    if not compass_resource_spec:
+        logger.debug("Compass resource spec is empty or missing")
+        return False
+
+    if k8s_resource_spec.get('name') != compass_resource_spec.get('name'):
+        logger.debug("Name mismatch between K8s and Compass resources")
+        return True
+    if k8s_resource_spec.get('description') != compass_resource_spec.get('description'):
+        logger.debug("Description mismatch between K8s and Compass resources")
+        return True
