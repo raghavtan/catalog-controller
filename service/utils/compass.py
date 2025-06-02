@@ -102,8 +102,6 @@ class CompassAPI:
                     headers=headers
                 )
                 if response.status_code == 200:
-                    logger.debug(f"::::::::::::{response.status_code}")
-                    logger.debug(f"::::::::::::{response.text}")
                     logger.debug(f"[Update] Successfully updated {resource_kind} {resource_id} {response.json()}")
                     return {"status_code": 200, **response.json()}
                 else:
