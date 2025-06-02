@@ -8,7 +8,7 @@ logger = get_logger("CompassAPI")
 
 class CompassAPI:
     def __init__(self):
-        self.host = os.getenv("COMPASS_SERVICE_ENDPOINT", "compass-service.compass.svc.cluster.local")
+        self.host = os.getenv("COMPASS_SERVICE_ENDPOINT", "compass-service.compass-service.svc.cluster.local")
         self.base_url = f"http://{self.host}/api/v1"
 
     async def get_by_id(self, resource_kind: str, resource_id: str) -> dict:
