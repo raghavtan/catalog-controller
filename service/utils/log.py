@@ -23,7 +23,7 @@ class LoggerSingleton:
             "CRITICAL": logging.CRITICAL
         }
 
-        log_level = log_levels.get(os.getenv("LOG_LEVEL"), logging.INFO)
+        log_level = log_levels.get(os.getenv("LOG_LEVEL"), logging.DEBUG)
         log_format = os.getenv("LOG_FORMAT", "%(asctime)s [%(levelname)s] [%(name)s] - %(message)s")
 
         logging.basicConfig(

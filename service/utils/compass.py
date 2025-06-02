@@ -21,6 +21,7 @@ class CompassAPI:
                 response = await client.get(request_url, headers=headers)
 
                 if response.status_code == 200:
+                    logger.debug(f"[GetByID]Successfully retrieved {resource_kind} with ID {resource_id} {response.json()}")
                     return {"status_code": 200, **response.json()}
                 elif response.status_code == 404:
                     return {"status_code": 404, "message": f"{resource_kind} not found"}
@@ -44,6 +45,7 @@ class CompassAPI:
                 response = await client.get(request_url, headers=headers)
 
                 if response.status_code == 200:
+                    logger.debug(f"[GetByName] Successfully retrieved {resource_kind} with name {resource_name} {response.json()}")
                     return {"status_code": 200, **response.json()}
                 elif response.status_code == 404:
                     return {"status_code": 404, "message": f"{resource_kind} with name {resource_name} not found"}
@@ -71,6 +73,7 @@ class CompassAPI:
                 )
 
                 if response.status_code == 201:
+                    logger.debug(f"[Create] Successfully created {resource_kind} {response.json()}")
                     return {"status_code": 201, **response.json()}
                 else:
                     response.raise_for_status()
@@ -96,6 +99,7 @@ class CompassAPI:
                 )
 
                 if response.status_code == 200:
+                    logger.debug(f"[Update] Successfully updated {resource_kind} {resource_id} {response.json()}")
                     return {"status_code": 200, **response.json()}
                 else:
                     response.raise_for_status()
@@ -115,7 +119,7 @@ class CompassAPI:
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.delete(request_url, headers=headers)
-
+                logger.debug(f"[Delete] Attempting to delete {resource_kind} {resource_id} response: {response.json()}")
                 return {"status_code": response.status_code}
 
         except httpx.HTTPStatusError as e:
@@ -131,9 +135,8 @@ class CompassAPI:
             k8s_spec = k8s_resource.get('spec', {})
             compass_spec = compass_resource.get('spec', {})
 
-            # Simple comparison - can be enhanced based on specific fields to compare
             return k8s_spec != compass_spec
 
         except Exception as e:
             logger.error(f"Error comparing specs: {str(e)}")
-            return True  # Assume differences if comparison fails
+            return True
