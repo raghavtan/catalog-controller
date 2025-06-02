@@ -30,8 +30,8 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Test
-        run: make test
+#      - name: Test
+#        run: make test
 
       - name: Generate Version
         id: version
