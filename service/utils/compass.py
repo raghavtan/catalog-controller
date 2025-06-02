@@ -15,18 +15,19 @@ class CompassAPI:
 
         logger.debug(f"Calling Compass API: {operation} {resource_kind} for {resource_data['metadata']['name']}")
         headers = {"Content-Type": "application/json","Accept": "application/json"}
-        request_url = f"{self.base_url}/{resource_kind}/{resource_data['status']['id']}"
+        request_url = f"{self.base_url}/{resource_kind}"
 
         try:
             async with httpx.AsyncClient() as client:
                 if operation == "delete":
-                    response = await client.delete(request_url)
+                    response = await client.delete(f"{request_url}/{resource_data['status']['id']}")
                 elif operation == "create":
-                    response = await client.post(f"{self.base_url}/{resource_kind}", data=resource_data, headers=headers)
+                    response = await client.post(request_url, data=resource_data, headers=headers)
                 elif operation == "update":
-                    response = await client.put(request_url, data=resource_data, headers=headers)
+                    response = await client.put(f"{request_url}/{resource_data['status']['id']}",
+                                                data=resource_data, headers=headers)
                 elif operation == "get":
-                    response = await client.get(request_url)
+                    response = await client.get(f"{request_url}/{resource_data['status']['id']}")
 
                 response.raise_for_status()
                 return response.json()

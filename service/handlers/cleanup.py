@@ -20,8 +20,11 @@ async def finalize_resource(request_data: MetacontrollerRequest):
 
         delete_result = await CompassAPI().dummy_call("delete", kind, parent)
 
-        if delete_result["success"]:
+        if delete_result["status_code"] >= 200:
             logger.debug(f"{kind} {compass_id} deleted successfully from Compass.")
+            return FinalizeResponse(finalized=True).model_dump(by_alias=True), 200
+        elif delete_result["status_code"] == 404:
+            logger.warning(f"{kind} {compass_id} not found in Compass. Already deleted or never existed.")
             return FinalizeResponse(finalized=True).model_dump(by_alias=True), 200
 
         logger.error(f"Finalize Failed {kind} {name}. {delete_result.get('status_code'), delete_result.get('message')}")

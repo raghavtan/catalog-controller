@@ -1,0 +1,56 @@
+{
+      "id": "ari:cloud:compass:fca6a80f-888b-4079-82e6-3c2f61c788e2:scorecard/4d010f50-96c4-48c0-bab5-a3dd5112b464/17965496-2b48-4f31-afa4-33ca9617257a",
+      "name": "observability",
+      "state": "PUBLISHED",
+      "type": "CUSTOM",
+      "verified": false,
+      "description": "https://github.com/motain/of-catalog/blob/main/docs/grading-system/observability.md#observability-grading-system",
+      "criterias": [
+        {
+          "id": "48ee5d4f-71fc-4ae7-9ae6-134f73f61348",
+          "weight": 15,
+          "name": "instrumentation-check",
+          "scoringStrategyRules": {
+            "onTrue": "MARK_AS_PASSED",
+            "onFalse": "MARK_AS_FAILED",
+            "onError": "MARK_AS_ERROR"
+          }
+        },
+        {
+          "id": "2422c3fa-8476-4e80-961b-8209accfddc8",
+          "weight": 15,
+          "name": "critical-alerts-slo-check",
+          "scoringStrategyRules": {
+            "onTrue": "MARK_AS_PASSED",
+            "onFalse": "MARK_AS_FAILED",
+            "onError": "MARK_AS_ERROR"
+          }
+        },
+        {
+          "id": "a902e415-27ca-4b9b-805a-014d3936e0f4",
+          "weight": 45,
+          "name": "alert-routing-and-notifications",
+          "scoringStrategyRules": {
+            "onTrue": "MARK_AS_PASSED",
+            "onFalse": "MARK_AS_FAILED",
+            "onError": "MARK_AS_ERROR"
+          }
+        },
+        {
+          "id": "dbe064d8-da93-4135-9e06-30d3fbb458cf",
+          "weight": 25,
+          "name": "observability-documentation",
+          "scoringStrategyRules": {
+            "onTrue": "MARK_AS_PASSED",
+            "onFalse": "MARK_AS_FAILED",
+            "onError": "MARK_AS_ERROR"
+          }
+        }
+      ],
+      "componentTypeIds": [
+        "SERVICE"
+      ],
+      "owner": {
+        "name": "Cloud Runtime"
+      }
+    }
