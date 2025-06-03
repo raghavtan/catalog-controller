@@ -68,12 +68,7 @@ class CompassAPI:
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
         request_url = f"{self.base_url}/{resource_kind}s"
 
-        if 'metadata' in resource_data:
-            resource_data['metadata'] = {k: v for k, v in resource_data['metadata'].items() if k not in [
-                'annotations', 'creationTimestamp', 'finalizers', 'deletionTimestamp',
-                'generation', 'resourceVersion', 'uid', 'managedFields', 'namespace',
-                'labels', 'ownerReferences'
-            ]}
+        resource_data['metadata'] = {"name": resource_data['metadata']['name'] }
 
         del resource_data['status']  # Remove status field if present
 
@@ -113,13 +108,9 @@ class CompassAPI:
         encoded_id = urllib.parse.quote(resource_id, safe='')
         request_url = f"{self.base_url}/{resource_kind}s/{encoded_id}"
 
-        if 'metadata' in resource_data:
-            resource_data['metadata'] = {k: v for k, v in resource_data['metadata'].items() if k not in [
-                'annotations', 'creationTimestamp', 'finalizers', 'deletionTimestamp',
-                'generation', 'resourceVersion', 'uid', 'managedFields', 'namespace'
-                'labels', 'ownerReferences'
-            ]}
+        resource_data['metadata'] = {"name": resource_data['metadata']['name'], }
         del resource_data['status']  # Remove status field if present
+
 
         if isinstance(resource_data, dict):
             try:
