@@ -70,8 +70,8 @@ class CompassAPI:
 
         if 'metadata' in resource_data:
             resource_data['metadata'] = {k: v for k, v in resource_data['metadata'].items() if k not in [
-                'annotations', 'creationTimestamp', 'finalizers',
-                'generation', 'resourceVersion', 'uid', 'managedFields'
+                'annotations', 'creationTimestamp', 'finalizers', 'deletionTimestamp',
+                'generation', 'resourceVersion', 'uid', 'managedFields', 'namespace'
             ]}
 
         if isinstance(resource_data, dict):
@@ -112,8 +112,8 @@ class CompassAPI:
 
         if 'metadata' in resource_data:
             resource_data['metadata'] = {k: v for k, v in resource_data['metadata'].items() if k not in [
-                'annotations', 'creationTimestamp', 'finalizers',
-                'generation', 'resourceVersion', 'uid', 'managedFields'
+                'annotations', 'creationTimestamp', 'finalizers', 'deletionTimestamp',
+                'generation', 'resourceVersion', 'uid', 'managedFields', 'namespace'
             ]}
 
         if isinstance(resource_data, dict):
