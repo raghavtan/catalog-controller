@@ -69,7 +69,9 @@ class CompassAPI:
         request_url = f"{self.base_url}/{resource_kind}s"
 
         resource_data['metadata'] = {"name": resource_data['metadata']['name'] }
-
+        resource_data['spec'].pop('facts', None)  # Remove 'facts' if it exists
+        resource_data['spec'].pop('evaluateOnDeploy', None)  # Remove 'evaluateOnDeploy' if it exists
+        resource_data['spec'].pop('grading-system', None)  # Remove 'grading-system' if it exists
         del resource_data['status']  # Remove status field if present
 
         if isinstance(resource_data, dict):
@@ -109,6 +111,9 @@ class CompassAPI:
         request_url = f"{self.base_url}/{resource_kind}s/{encoded_id}"
 
         resource_data['metadata'] = {"name": resource_data['metadata']['name'], }
+        resource_data['spec'].pop('facts', None)  # Remove 'facts' if it exists
+        resource_data['spec'].pop('evaluateOnDeploy', None)  # Remove 'evaluateOnDeploy' if it exists
+        resource_data['spec'].pop('grading-system', None)  # Remove 'grading-system' if it exists
         del resource_data['status']  # Remove status field if present
 
 

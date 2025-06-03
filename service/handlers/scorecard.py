@@ -17,6 +17,7 @@ async def sync_scorecard(request_data: MetacontrollerRequest):
         response_status = {"id": None, "metricsSummary": None, "metricAssociation": []}
         compass_client = CompassAPI()
         metrics_summary, metric_association= await validate_metrics(parent)
+        logger.debug(f"Metrics associations for scorecard {scorecard_name}: {metric_association}")
 
         compass_id = await ensure_scorecard_exists(compass_client, parent, scorecard_name)
 

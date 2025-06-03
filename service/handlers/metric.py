@@ -60,10 +60,6 @@ async def ensure_metric_exists(compass_client: CompassAPI, parent: dict, metric_
     Returns compass_id or None if failed.
     """
     try:
-        del parent['spec']['facts']
-        del parent['spec']['evaluateOnDeploy']
-        del parent['spec']['grading-system']
-
         status_id = parent.get('status', {}).get('id')
 
         if status_id:
