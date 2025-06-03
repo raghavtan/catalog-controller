@@ -16,12 +16,17 @@ async def sync_scorecard(request_data: MetacontrollerRequest):
     try:
         response_status = {"id": None, "metricsSummary": None, "metricAssociation": []}
         compass_client = CompassAPI()
-        metrics_summary, metric_association= await validate_metrics(parent)
+        metrics_summary, metric_association = await validate_metrics(parent)
         logger.debug(f"Metrics associations for scorecard {scorecard_name}: {metric_association}")
 
-        compass_id = await ensure_scorecard_exists(compass_client, parent, scorecard_name)
-
+        # Update parent with metric IDs BEFORE checking if it exists
         parent = update_payload_with_metric_ids(metric_association, parent)
+
+        # Store a deep copy of the parent to use in case we need to create/update
+        import copy
+        parent_with_metrics = copy.deepcopy(parent)
+
+        compass_id = await ensure_scorecard_exists(compass_client, parent, scorecard_name)
 
         if not compass_id:
             logger.error(f"Failed to ensure scorecard {scorecard_name} exists")
@@ -35,9 +40,10 @@ async def sync_scorecard(request_data: MetacontrollerRequest):
             return SyncResponse(status={"error": "Failed to retrieve scorecard"}, children=[]).model_dump(
                 by_alias=True), 500
 
-        if await scorecard_spec_differences(parent, current_scorecard['data']):
+        if await scorecard_spec_differences(parent_with_metrics, current_scorecard['data']):
             logger.info(f"Spec differences detected for scorecard {scorecard_name}. Updating...")
-            update_response = await compass_client.update("scorecard", compass_id, parent)
+            # Use the parent_with_metrics which has the metricDefinitionId
+            update_response = await compass_client.update("scorecard", compass_id, parent_with_metrics)
 
             if update_response['status_code'] != 200:
                 logger.error(f"Failed to update scorecard {scorecard_name}")
@@ -48,7 +54,8 @@ async def sync_scorecard(request_data: MetacontrollerRequest):
         response_status["id"] = compass_id
 
         if compass_id:
-            response_status["metricsSummary"], response_status["metricAssociation"] = metrics_summary, metric_association
+            response_status["metricsSummary"], response_status[
+                "metricAssociation"] = metrics_summary, metric_association
 
         return SyncResponse(status=response_status, children=[]).model_dump(by_alias=True), 200
 
@@ -85,6 +92,7 @@ async def ensure_scorecard_exists(compass_client: CompassAPI, parent: dict, scor
             return imported_id
 
         logger.debug(f"Scorecard {scorecard_name} not found in Compass. Creating new scorecard.")
+        # Note that we're using the parent that already has metricDefinitionId
         create_response = await create_scorecard(compass_client, parent, scorecard_name)
         return create_response
 

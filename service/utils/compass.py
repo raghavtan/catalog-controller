@@ -68,26 +68,41 @@ class CompassAPI:
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
         request_url = f"{self.base_url}/{resource_kind}s"
 
-        resource_data['metadata'] = {"name": resource_data['metadata']['name'] }
-        resource_data['spec'].pop('facts', None)  # Remove 'facts' if it exists
-        resource_data['spec'].pop('evaluateOnDeploy', None)  # Remove 'evaluateOnDeploy' if it exists
-        resource_data['spec'].pop('grading-system', None)  # Remove 'grading-system' if it exists
-        del resource_data['status']  # Remove status field if present
+        # Create a deep copy to avoid modifying the original
+        import copy
+        data_to_send = copy.deepcopy(resource_data)
 
-        if isinstance(resource_data, dict):
+        data_to_send['metadata'] = {"name": data_to_send['metadata']['name']}
+        data_to_send['spec'].pop('facts', None)  # Remove 'facts' if it exists
+        data_to_send['spec'].pop('evaluateOnDeploy', None)  # Remove 'evaluateOnDeploy' if it exists
+        data_to_send['spec'].pop('grading-system', None)  # Remove 'grading-system' if it exists
+
+        if 'status' in data_to_send:
+            del data_to_send['status']  # Remove status field if present
+
+        # Ensure metricDefinitionId remains in each criterion
+        if resource_kind == "scorecard":
+            for criterion in data_to_send.get('spec', {}).get('criteria', []):
+                has_metric = criterion.get('hasMetricValue', {})
+                # Make sure the metricDefinitionId is preserved if it exists in the original
+                if 'metricDefinitionId' not in has_metric and 'metricName' in has_metric:
+                    # Log that the metricDefinitionId is missing
+                    metric_name = has_metric.get('metricName')
+                    logger.warning(f"Missing metricDefinitionId for {metric_name} in scorecard criteria")
+
+        if isinstance(data_to_send, dict):
             try:
-                resource_data = json.loads(json.dumps(resource_data, default=str))
+                data_to_send = json.loads(json.dumps(data_to_send, default=str))
             except TypeError as e:
                 logger.error(f"Failed to serialize resource data: {str(e)}")
                 return {"status_code": 500, "message": "Invalid resource data format"}
 
-
         try:
-            logger.debug(f"[Create] Attempting to create {resource_kind} with data: {resource_data}")
+            logger.debug(f"[Create] Attempting to create {resource_kind} with data: {data_to_send}")
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     request_url,
-                    json=resource_data,  # Use json parameter instead of data
+                    json=data_to_send,  # Use json parameter instead of data
                     headers=headers
                 )
 
@@ -110,26 +125,31 @@ class CompassAPI:
         encoded_id = urllib.parse.quote(resource_id, safe='')
         request_url = f"{self.base_url}/{resource_kind}s/{encoded_id}"
 
-        resource_data['metadata'] = {"name": resource_data['metadata']['name'], }
-        resource_data['spec'].pop('facts', None)  # Remove 'facts' if it exists
-        resource_data['spec'].pop('evaluateOnDeploy', None)  # Remove 'evaluateOnDeploy' if it exists
-        resource_data['spec'].pop('grading-system', None)  # Remove 'grading-system' if it exists
-        del resource_data['status']  # Remove status field if present
+        # Create a deep copy to avoid modifying the original
+        import copy
+        data_to_send = copy.deepcopy(resource_data)
 
+        data_to_send['metadata'] = {"name": data_to_send['metadata']['name']}
+        data_to_send['spec'].pop('facts', None)  # Remove 'facts' if it exists
+        data_to_send['spec'].pop('evaluateOnDeploy', None)  # Remove 'evaluateOnDeploy' if it exists
+        data_to_send['spec'].pop('grading-system', None)  # Remove 'grading-system' if it exists
 
-        if isinstance(resource_data, dict):
+        if 'status' in data_to_send:
+            del data_to_send['status']  # Remove status field if present
+
+        if isinstance(data_to_send, dict):
             try:
-                resource_data = json.loads(json.dumps(resource_data, default=str))
+                data_to_send = json.loads(json.dumps(data_to_send, default=str))
             except TypeError as e:
                 logger.error(f"Failed to serialize resource data: {str(e)}")
                 return {"status_code": 500, "message": "Invalid resource data format"}
 
         try:
-            logger.debug(f"[Update] Attempting to update {resource_kind} {resource_id} with data: {resource_data}")
+            logger.debug(f"[Update] Attempting to update {resource_kind} {resource_id} with data: {data_to_send}")
             async with httpx.AsyncClient() as client:
                 response = await client.put(
                     request_url,
-                    json=resource_data,  # Use json parameter instead of data
+                    json=data_to_send,  # Use json parameter instead of data
                     headers=headers
                 )
                 if response.status_code == 200:
