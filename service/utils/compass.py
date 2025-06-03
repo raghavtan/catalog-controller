@@ -68,6 +68,19 @@ class CompassAPI:
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
         request_url = f"{self.base_url}/{resource_kind}s"
 
+        resource_data = {k: v for k, v in resource_data.items() if k not in [
+            'metadata', 'annotations', 'creationTimestamp', 'finalizers',
+            'generation', 'resourceVersion', 'uid', 'status', 'managedFields'
+        ]}
+
+        if isinstance(resource_data, dict):
+            try:
+                resource_data = json.loads(json.dumps(resource_data, default=str))
+            except TypeError as e:
+                logger.error(f"Failed to serialize resource data: {str(e)}")
+                return {"status_code": 500, "message": "Invalid resource data format"}
+
+
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
@@ -93,6 +106,18 @@ class CompassAPI:
         """Update existing resource"""
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
         request_url = f"{self.base_url}/{resource_kind}s/{resource_id}"
+
+        resource_data = {k: v for k, v in resource_data.items() if k not in [
+            'metadata', 'annotations', 'creationTimestamp', 'finalizers',
+            'generation', 'resourceVersion', 'uid', 'status', 'managedFields'
+        ]}
+
+        if isinstance(resource_data, dict):
+            try:
+                resource_data = json.loads(json.dumps(resource_data, default=str))
+            except TypeError as e:
+                logger.error(f"Failed to serialize resource data: {str(e)}")
+                return {"status_code": 500, "message": "Invalid resource data format"}
 
         try:
             async with httpx.AsyncClient() as client:
