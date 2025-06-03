@@ -105,7 +105,8 @@ class CompassAPI:
     async def update(self, resource_kind: str, resource_id: str, resource_data: dict) -> dict:
         """Update existing resource"""
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
-        request_url = f"{self.base_url}/{resource_kind}s/{resource_id}"
+        encoded_id = urllib.parse.quote(resource_id, safe='')
+        request_url = f"{self.base_url}/{resource_kind}s/{encoded_id}"
 
         resource_data = {k: v for k, v in resource_data.items() if k not in [
             'metadata', 'annotations', 'creationTimestamp', 'finalizers',
@@ -142,7 +143,8 @@ class CompassAPI:
     async def delete(self, resource_kind: str, resource_id: str) -> dict:
         """Delete resource"""
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
-        request_url = f"{self.base_url}/{resource_kind}s/{resource_id}"
+        encoded_id = urllib.parse.quote(resource_id, safe='')
+        request_url = f"{self.base_url}/{resource_kind}s/{encoded_id}"
 
         try:
             async with httpx.AsyncClient() as client:
