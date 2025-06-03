@@ -37,6 +37,7 @@ async def sync_scorecard(request_data: MetacontrollerRequest):
 
             if update_response['status_code'] != 200:
                 logger.error(f"Failed to update scorecard {scorecard_name}")
+                logger.debug(f"Update response: {update_response}")
                 return SyncResponse(status={"error": "Failed to update scorecard"}, children=[]).model_dump(
                     by_alias=True), 500
 
