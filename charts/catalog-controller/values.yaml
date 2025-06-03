@@ -32,7 +32,7 @@ probes:
     initialDelaySeconds: 5
     periodSeconds: 10
 
-resyncPeriodSeconds: &resyncPeriodSeconds 1800
+resyncPeriodSeconds: &resyncPeriodSeconds 600
 timeoutSeconds: &timeoutSeconds "120s"
 
 controllers:
