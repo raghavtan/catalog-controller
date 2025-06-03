@@ -16,8 +16,18 @@ async def sync_scorecard(request_data: MetacontrollerRequest):
     try:
         response_status = {"id": None, "metricsSummary": None, "metricAssociation": []}
         compass_client = CompassAPI()
+        metrics_summary, metric_association= await validate_metrics(parent)
 
         compass_id = await ensure_scorecard_exists(compass_client, parent, scorecard_name)
+
+        for criterion in parent.get('spec', {}).get('criteria', []):
+            has_metric = criterion.get('hasMetricValue', {})
+            if has_metric and 'metricName' in has_metric:
+                metric_name = has_metric['metricName']
+                for association in metric_association:
+                    if association['metricName'] == metric_name:
+                        has_metric['metricDefinitionId'] = association['metricId']
+                        break
 
         if not compass_id:
             logger.error(f"Failed to ensure scorecard {scorecard_name} exists")
@@ -44,7 +54,7 @@ async def sync_scorecard(request_data: MetacontrollerRequest):
         response_status["id"] = compass_id
 
         if compass_id:
-            response_status["metricsSummary"], response_status["metricAssociation"] = await validate_metrics(parent)
+            response_status["metricsSummary"], response_status["metricAssociation"] = metrics_summary, metric_association
 
         return SyncResponse(status=response_status, children=[]).model_dump(by_alias=True), 200
 
@@ -60,6 +70,9 @@ async def ensure_scorecard_exists(compass_client: CompassAPI, parent: dict, scor
     """
     try:
         status_id = parent.get('status', {}).get('id')
+
+        # Add metricDefinitionId to each criterion from ValidateMetrics for each name
+        validate_metrics()
 
         if status_id:
             logger.debug(f"Found existing ID {status_id} for scorecard {scorecard_name}")

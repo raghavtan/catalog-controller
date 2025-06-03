@@ -69,8 +69,8 @@ class CompassAPI:
         request_url = f"{self.base_url}/{resource_kind}s"
 
         resource_data = {k: v for k, v in resource_data.items() if k not in [
-            'metadata', 'annotations', 'creationTimestamp', 'finalizers',
-            'generation', 'resourceVersion', 'uid', 'status', 'managedFields'
+            'annotations', 'creationTimestamp', 'finalizers',
+            'generation', 'resourceVersion', 'uid', 'managedFields'
         ]}
 
         if isinstance(resource_data, dict):
@@ -110,8 +110,8 @@ class CompassAPI:
         request_url = f"{self.base_url}/{resource_kind}s/{encoded_id}"
 
         resource_data = {k: v for k, v in resource_data.items() if k not in [
-            'metadata', 'annotations', 'creationTimestamp', 'finalizers',
-            'generation', 'resourceVersion', 'uid', 'status', 'managedFields'
+            'annotations', 'creationTimestamp', 'finalizers',
+            'generation', 'resourceVersion', 'uid', 'managedFields'
         ]}
 
         if isinstance(resource_data, dict):

@@ -17,12 +17,7 @@ async def sync_metric(request_data: MetacontrollerRequest):
         desired_children = []
         compass_client = CompassAPI()
 
-        payload_for_compass = parent.copy()
-        del payload_for_compass['spec']['facts']
-        del payload_for_compass['spec']['cronSchedule']
-        del payload_for_compass['spec']['grading-system']
-
-        compass_id = await ensure_metric_exists(compass_client, payload_for_compass, metric_name)
+        compass_id = await ensure_metric_exists(compass_client, parent, metric_name)
 
         if not compass_id:
             logger.error(f"Failed to ensure metric {metric_name} exists")
@@ -65,6 +60,10 @@ async def ensure_metric_exists(compass_client: CompassAPI, parent: dict, metric_
     Returns compass_id or None if failed.
     """
     try:
+        del parent['spec']['facts']
+        del parent['spec']['cronSchedule']
+        del parent['spec']['grading-system']
+
         status_id = parent.get('status', {}).get('id')
 
         if status_id:
