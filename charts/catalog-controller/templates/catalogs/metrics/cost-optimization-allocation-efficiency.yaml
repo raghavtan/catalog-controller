@@ -1,0 +1,50 @@
+apiVersion: catalog.onefootball.com/v1alpha1
+kind: Metric
+metadata:
+  name: allocation-efficiency
+spec:
+  description: https://github.com/motain/of-catalog/blob/main/docs/grading-system/cost-optimization.md#cost-optimization-grading-system
+  format:
+    unit: Allocation Efficiency
+  name: allocation-efficiency
+  facts:
+    - filePath: app.toml
+      id: check-app-toml-resource-request
+      jsonPath: (.service.cpu_requests // .service.production.cpu_requests | . != null)
+        and (.service.memory_requests // .service.production.memory_requests | . != null)
+      name: Check if CPU requests and memory requests are defined in app.toml under [service]
+        or [service.production]
+      repo: ${Metadata.Name}
+      rule: jsonpath
+      source: github
+      type: extract
+    - filePath: app.toml
+      id: check-app-toml-cpu-limits
+      jsonPath: .service.cpu_limits // .service.production.cpu_limits | not
+      name: Check if CPU limits are not defined in app.toml under [service] or [service.production]
+      repo: ${Metadata.Name}
+      rule: jsonpath
+      source: github
+      type: extract
+    - filePath: app.toml
+      id: check-app-toml-memory-limits
+      jsonPath: .service.memory_limits // .service.production.memory_limits | . != null
+      name: Check if  memory limits are defined in app.toml under [service] or [service.production]
+      repo: ${Metadata.Name}
+      rule: jsonpath
+      source: github
+      type: extract
+    - dependsOn:
+        - check-app-toml-resource-request
+        - check-app-toml-cpu-limits
+        - check-app-toml-memory-limits
+      id: aggregate-resource-requests
+      method: and
+      name: check resource requests and limits
+      type: aggregate
+  componentType:
+    - service
+    - cloud-resource
+  grading-system: cost-optimization
+  cronSchedule: "0 * * * *"
+
