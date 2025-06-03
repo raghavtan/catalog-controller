@@ -154,16 +154,11 @@ async def validate_metrics(parent: Dict[str, Any]) -> Tuple[str, List[Dict[str, 
 
 
 def update_payload_with_metric_ids(metric_association, payload):
-    # Create a dictionary mapping metricName to metricId
     metric_map = {item['metricName']: item['metricId'] for item in metric_association}
-
-    # Update each criterion in the payload
     for criterion in payload['spec']['criteria']:
         metric_name = criterion['hasMetricValue']['metricName']
         if metric_name in metric_map:
-            # Add the metricId to the hasMetricValue dictionary
-            criterion['hasMetricValue']['metricId'] = metric_map[metric_name]
-
+            criterion['hasMetricValue']['metricDefinitionId'] = metric_map[metric_name]
     return payload
 
 
