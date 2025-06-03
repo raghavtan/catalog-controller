@@ -31,7 +31,7 @@ async def sync_scorecard(request_data: MetacontrollerRequest):
             return SyncResponse(status={"error": "Failed to retrieve scorecard"}, children=[]).model_dump(
                 by_alias=True), 500
 
-        if compass_client.has_spec_differences(parent, current_scorecard):
+        if await scorecard_spec_differences(parent, current_scorecard['data']):
             logger.info(f"Spec differences detected for scorecard {scorecard_name}. Updating...")
             update_response = await compass_client.update("scorecard", compass_id, parent)
 
@@ -146,3 +146,29 @@ async def validate_metrics(parent: Dict[str, Any]) -> Tuple[str, List[Dict[str, 
     except Exception as e:
         logger.error(f"Error validating metrics: {str(e)}")
         return f"Error validating metrics: {str(e)}", []
+
+
+async def scorecard_spec_differences(k8s_resource, compass_resource):
+    k8s_resource_spec = k8s_resource.get('spec', {})
+    if not k8s_resource_spec:
+        logger.debug("K8s resource spec is empty or missing")
+        return False
+    compass_resource_spec = compass_resource.get('spec', {})
+    if not compass_resource_spec:
+        logger.debug("Compass resource spec is empty or missing")
+        return False
+
+    if k8s_resource_spec.get('name') != compass_resource_spec.get('name'):
+        logger.debug(f"[ScoreCards] [{k8s_resource_spec.get('name')}] Name mismatch between K8s and Compass resources")
+        return True
+    if k8s_resource_spec.get('description') != compass_resource_spec.get('description'):
+        logger.debug(f"[ScoreCards] [{k8s_resource_spec.get('name')}] Description mismatch between K8s and Compass "
+                     f"resources")
+        return True
+    if k8s_resource_spec.get('state') != compass_resource_spec.get('state'):
+        logger.debug(f"[ScoreCards] [{k8s_resource_spec.get('name')}]state mismatch between K8s and Compass resources")
+        return True
+    if k8s_resource_spec.get('componentTypeIds') != compass_resource_spec.get('componentTypeIds'):
+        logger.debug(f"[ScoreCards] [{k8s_resource_spec.get('name')}] ComponentTypeIds mismatch between K8s and "
+                     f"Compass resources")
+        return True
