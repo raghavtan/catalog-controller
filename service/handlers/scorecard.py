@@ -149,6 +149,9 @@ async def validate_metrics(parent: Dict[str, Any]) -> Tuple[str, List[Dict[str, 
 
 
 async def scorecard_spec_differences(k8s_resource, compass_resource):
+    logger.debug(f"[ScoreCards] Comparing K8s resource {k8s_resource['metadata']['name']}/{k8s_resource['spec']['name']} ")
+    logger.debug(f"[ScoreCards] comparing {k8s_resource}")
+    logger.debug(f"[ScoreCards] comparing {compass_resource}")
     k8s_resource_spec = k8s_resource.get('spec', {})
     if not k8s_resource_spec:
         logger.debug("K8s resource spec is empty or missing")
