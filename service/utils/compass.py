@@ -72,7 +72,7 @@ class CompassAPI:
             resource_data['metadata'] = {k: v for k, v in resource_data['metadata'].items() if k not in [
                 'annotations', 'creationTimestamp', 'finalizers', 'deletionTimestamp',
                 'generation', 'resourceVersion', 'uid', 'managedFields', 'namespace',
-                'name', 'labels', 'ownerReferences'
+                'labels', 'ownerReferences'
             ]}
 
         del resource_data['status']  # Remove status field if present
@@ -117,6 +117,7 @@ class CompassAPI:
             resource_data['metadata'] = {k: v for k, v in resource_data['metadata'].items() if k not in [
                 'annotations', 'creationTimestamp', 'finalizers', 'deletionTimestamp',
                 'generation', 'resourceVersion', 'uid', 'managedFields', 'namespace'
+                'labels', 'ownerReferences'
             ]}
         del resource_data['status']  # Remove status field if present
 
