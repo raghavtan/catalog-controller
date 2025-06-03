@@ -21,14 +21,7 @@ async def sync_scorecard(request_data: MetacontrollerRequest):
 
         compass_id = await ensure_scorecard_exists(compass_client, parent, scorecard_name)
 
-        for criterion in parent.get('spec', {}).get('criteria', []):
-            has_metric = criterion.get('hasMetricValue', {})
-            if has_metric and 'metricName' in has_metric:
-                metric_name = has_metric['metricName']
-                for association in metric_association:
-                    if association['metricName'] == metric_name:
-                        has_metric['metricDefinitionId'] = association['metricId']
-                        break
+        parent = update_payload_with_metric_ids(metric_association, parent)
 
         if not compass_id:
             logger.error(f"Failed to ensure scorecard {scorecard_name} exists")
@@ -158,6 +151,20 @@ async def validate_metrics(parent: Dict[str, Any]) -> Tuple[str, List[Dict[str, 
     except Exception as e:
         logger.error(f"Error validating metrics: {str(e)}")
         return f"Error validating metrics: {str(e)}", []
+
+
+def update_payload_with_metric_ids(metric_association, payload):
+    # Create a dictionary mapping metricName to metricId
+    metric_map = {item['metricName']: item['metricId'] for item in metric_association}
+
+    # Update each criterion in the payload
+    for criterion in payload['spec']['criteria']:
+        metric_name = criterion['hasMetricValue']['metricName']
+        if metric_name in metric_map:
+            # Add the metricId to the hasMetricValue dictionary
+            criterion['hasMetricValue']['metricId'] = metric_map[metric_name]
+
+    return payload
 
 
 async def scorecard_spec_differences(k8s_resource, compass_resource):
