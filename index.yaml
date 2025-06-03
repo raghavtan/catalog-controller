@@ -3,6 +3,16 @@ entries:
   catalog-controller:
   - apiVersion: v2
     appVersion: 1.0.0
+    created: "2025-06-03T07:05:21.018138411Z"
+    description: A Helm chart for the Catalog Controller
+    digest: b27f97328732234e42b7f1e8f907081f356a70f09c2ad8e3ef18a5fa1870e342
+    name: catalog-controller
+    type: application
+    urls:
+    - https://github.com/motain/catalog-controller/releases/download/catalog-controller-0.8.0/catalog-controller-0.8.0.tgz
+    version: 0.8.0
+  - apiVersion: v2
+    appVersion: 1.0.0
     created: "2025-06-02T16:55:24.878097951Z"
     description: A Helm chart for the Catalog Controller
     digest: 137bcb0b2e884dfda434331ae61680595068e035de8b7c5be4ffbd27492e0f95
@@ -361,4 +371,4 @@ entries:
     urls:
     - https://github.com/motain/catalog-controller/releases/download/catalog-controller-0.1.1/catalog-controller-0.1.1.tgz
     version: 0.1.1
-generated: "2025-06-02T16:55:24.878928917Z"
+generated: "2025-06-03T07:05:21.018485117Z"
