@@ -82,6 +82,7 @@ class CompassAPI:
 
 
         try:
+            logger.debug(f"[Create] Attempting to create {resource_kind} with data: {resource_data}")
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     request_url,
@@ -121,6 +122,7 @@ class CompassAPI:
                 return {"status_code": 500, "message": "Invalid resource data format"}
 
         try:
+            logger.debug(f"[Update] Attempting to update {resource_kind} {resource_id} with data: {resource_data}")
             async with httpx.AsyncClient() as client:
                 response = await client.put(
                     request_url,
