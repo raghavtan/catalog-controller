@@ -68,10 +68,11 @@ class CompassAPI:
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
         request_url = f"{self.base_url}/{resource_kind}s"
 
-        resource_data = {k: v for k, v in resource_data.items() if k not in [
-            'annotations', 'creationTimestamp', 'finalizers',
-            'generation', 'resourceVersion', 'uid', 'managedFields'
-        ]}
+        if 'metadata' in resource_data:
+            resource_data['metadata'] = {k: v for k, v in resource_data['metadata'].items() if k not in [
+                'annotations', 'creationTimestamp', 'finalizers',
+                'generation', 'resourceVersion', 'uid', 'managedFields'
+            ]}
 
         if isinstance(resource_data, dict):
             try:
@@ -109,10 +110,11 @@ class CompassAPI:
         encoded_id = urllib.parse.quote(resource_id, safe='')
         request_url = f"{self.base_url}/{resource_kind}s/{encoded_id}"
 
-        resource_data = {k: v for k, v in resource_data.items() if k not in [
-            'annotations', 'creationTimestamp', 'finalizers',
-            'generation', 'resourceVersion', 'uid', 'managedFields'
-        ]}
+        if 'metadata' in resource_data:
+            resource_data['metadata'] = {k: v for k, v in resource_data['metadata'].items() if k not in [
+                'annotations', 'creationTimestamp', 'finalizers',
+                'generation', 'resourceVersion', 'uid', 'managedFields'
+            ]}
 
         if isinstance(resource_data, dict):
             try:

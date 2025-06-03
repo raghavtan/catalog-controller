@@ -71,9 +71,6 @@ async def ensure_scorecard_exists(compass_client: CompassAPI, parent: dict, scor
     try:
         status_id = parent.get('status', {}).get('id')
 
-        # Add metricDefinitionId to each criterion from ValidateMetrics for each name
-        validate_metrics()
-
         if status_id:
             logger.debug(f"Found existing ID {status_id} for scorecard {scorecard_name}")
             response = await compass_client.get_by_id("scorecard", status_id)
