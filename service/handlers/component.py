@@ -61,10 +61,6 @@ async def sync_component(request_data: MetacontrollerRequest):
 
 
 async def ensure_component_exists(compass_client: CompassAPI, parent: dict, component_name: str) -> str:
-    """
-    Ensure component exists in Compass. Try import by name if no status ID, otherwise validate existing ID.
-    Returns compass_id or None if failed.
-    """
     try:
         status_id = parent.get('status', {}).get('id')
 
