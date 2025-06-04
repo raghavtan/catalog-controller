@@ -190,3 +190,8 @@ async def scorecard_spec_differences(k8s_resource, compass_resource):
         logger.debug(f"[ScoreCards] [{k8s_resource_spec.get('name')}] ComponentTypeIds mismatch between K8s and "
                      f"Compass resources")
         return True
+    if k8s_resource_spec.get('criteria') != compass_resource.get('criteria'):
+        logger.debug(f"[ScoreCards] [{k8s_resource_spec.get('name')}] Criteria mismatch between K8s and Compass "
+                     f"resources")
+        return True
+    return False

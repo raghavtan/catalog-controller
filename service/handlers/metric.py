@@ -121,3 +121,5 @@ async def metric_spec_differences(k8s_resource, compass_resource):
     if k8s_resource_spec.get('description') != compass_resource_spec.get('description'):
         logger.debug("Description mismatch between K8s and Compass resources")
         return True
+
+    return False
