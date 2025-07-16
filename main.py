@@ -23,12 +23,18 @@ async def sync_resource(resource_type: str, request_data: MetacontrollerRequest 
     logger.info(f"Received sync request for {resource_type}: {request_data.parent.metadata.name}")
     logger.debug(f"Request data: {request_data}")
 
+    response_content = {}
+    status_code = 200
+
     if resource_type == "metric":
-        response_content, status_code = await sync_metric(request_data)
+        logger.debug("Processing metric sync request")
+        # response_content, status_code = await sync_metric(request_data)
     elif resource_type == "scorecard":
-        response_content, status_code = await sync_scorecard(request_data)
+        logger.debug("Processing scorecard sync request")
+        # response_content, status_code = await sync_scorecard(request_data)
     elif resource_type == "component":
-        response_content, status_code = await sync_component(request_data)
+        logger.debug("Processing component sync request")
+        # response_content, status_code = await sync_component(request_data)
     else:
         logger.error(f"Unsupported resource type: {resource_type}")
         return JSONResponse({"error": "Unsupported resource type"}, status_code=400)
@@ -39,8 +45,10 @@ async def sync_resource(resource_type: str, request_data: MetacontrollerRequest 
 
 @app.post("/finalize")
 async def finalize(request_data: MetacontrollerRequest = Body(...)):
+    response_content = {}
+    status_code = 200
     logger.info(f"Received finalize request for {request_data.parent.kind}:{request_data.parent.metadata.name}")
-    response_content, status_code = await finalize_resource(request_data)
+    # response_content, status_code = await finalize_resource(request_data)
     return JSONResponse(response_content, status_code)
 
 
